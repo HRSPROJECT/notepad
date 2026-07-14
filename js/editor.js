@@ -12,6 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const wsVal = document.getElementById('ws-val');
   const ruledBox = document.getElementById('opt-ruled');
   const marginBox = document.getElementById('opt-margin');
+  const btnBold = document.getElementById('btn-bold');
+  const btnUnderline = document.getElementById('btn-underline');
+  const bwSlider = document.getElementById('editor-bold-weight');
+  const bwVal = document.getElementById('bw-val');
+  const utSlider = document.getElementById('editor-underline-thick');
+  const utVal = document.getElementById('ut-val');
   const customInk = document.getElementById('ink-custom');
   const paperSheet = document.getElementById('paper-sheet');
   const paperOut = document.getElementById('paper-out');
@@ -20,6 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const wordCount = document.getElementById('word-count');
   const btnClear = document.getElementById('btn-clear');
   const btnPrint = document.getElementById('btn-print');
+  const btnDownload = document.getElementById('btn-download');
+  const btnShare = document.getElementById('btn-share');
   
   // Preset elements
   const presetPaperButtons = document.querySelectorAll('[data-paper]');
@@ -35,6 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
     wordSpacing: 0,
     ruled: true,
     margin: true,
+    boldWeight: 700,
+    underlineThickness: 2,
     ink: '#1a2a6c', // Gel Blue default
     paperPreset: 'ruled' // classic lined default
   };
@@ -70,6 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
       wordSpacing: state.wordSpacing,
       ruled: state.ruled,
       margin: state.margin,
+      boldWeight: state.boldWeight,
+      underlineThickness: state.underlineThickness,
       ink: state.ink,
       paperPreset: state.paperPreset
     }));
@@ -97,6 +109,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (ruledBox) ruledBox.checked = state.ruled;
     if (marginBox) marginBox.checked = state.margin;
+    if (bwSlider) {
+      bwSlider.value = state.boldWeight;
+      bwVal.textContent = state.boldWeight;
+    }
+    if (utSlider) {
+      utSlider.value = state.underlineThickness;
+      utVal.textContent = state.underlineThickness;
+    }
     if (customInk) customInk.value = state.ink;
 
     // Set active paper button
@@ -133,7 +153,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Apply text content & fonts
     if (paperOut) {
-      paperOut.textContent = state.text;
+      // Escape HTML to prevent XSS, then parse custom markdown
+      let htmlContent = state.text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      // Replace **bold** with <span>
+      htmlContent = htmlContent.replace(/\*\*(.*?)\*\*/g, `<span style="font-weight: ${state.boldWeight};">$1</span>`);
+
+      // Replace __underline__ with <span>
+      htmlContent = htmlContent.replace(/__(.*?)__/g, `<span style="text-decoration: underline; text-decoration-thickness: ${state.underlineThickness}px;">$1</span>`);
+
+      paperOut.innerHTML = htmlContent;
+
       paperOut.style.fontFamily = state.font;
       paperOut.style.fontSize = fontSize + 'px';
       paperOut.style.lineHeight = lineHeight + 'px';
@@ -215,6 +248,88 @@ document.addEventListener('DOMContentLoaded', () => {
   if (txt) {
     txt.addEventListener('input', (e) => {
       state.text = e.target.value;
+      render();
+      saveState();
+    });
+
+    txt.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const start = txt.selectionStart;
+        const currentLineStart = txt.value.lastIndexOf('\n', start - 1) + 1;
+        const currentLine = txt.value.substring(currentLineStart, start);
+
+        // Match lists like "1. ", "1) ", "a. ", "- "
+        const listMatch = currentLine.match(/^(\s*)([0-9]+[.)]|\*|-|\+)\s+/);
+
+        if (listMatch) {
+          e.preventDefault();
+          const indent = listMatch[1];
+          let bullet = listMatch[2];
+
+          if (/^[0-9]+[.)]$/.test(bullet)) {
+            // It's a number list, increment the number
+            const num = parseInt(bullet, 10);
+            const separator = bullet.replace(/[0-9]/g, '');
+            bullet = (num + 1) + separator;
+          }
+
+          const insertText = '\n' + indent + bullet + ' ';
+
+          const newText = txt.value.substring(0, start) + insertText + txt.value.substring(txt.selectionEnd);
+          txt.value = newText;
+          state.text = newText;
+
+          txt.setSelectionRange(start + insertText.length, start + insertText.length);
+
+          render();
+          saveState();
+        }
+      }
+    });
+  }
+
+  // Wrap selected text in textarea
+  function insertFormatting(prefix, suffix) {
+    if (!txt) return;
+    const start = txt.selectionStart;
+    const end = txt.selectionEnd;
+    const selectedText = txt.value.substring(start, end);
+    const newText = txt.value.substring(0, start) + prefix + selectedText + suffix + txt.value.substring(end);
+
+    txt.value = newText;
+    state.text = newText;
+
+    // Maintain selection roughly
+    setTimeout(() => {
+      txt.focus();
+      txt.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length);
+    }, 0);
+
+    render();
+    saveState();
+  }
+
+  if (btnBold) {
+    btnBold.addEventListener('click', () => insertFormatting('**', '**'));
+  }
+
+  if (btnUnderline) {
+    btnUnderline.addEventListener('click', () => insertFormatting('__', '__'));
+  }
+
+  if (bwSlider) {
+    bwSlider.addEventListener('input', (e) => {
+      state.boldWeight = parseInt(e.target.value);
+      if (bwVal) bwVal.textContent = state.boldWeight;
+      render();
+      saveState();
+    });
+  }
+
+  if (utSlider) {
+    utSlider.addEventListener('input', (e) => {
+      state.underlineThickness = parseInt(e.target.value);
+      if (utVal) utVal.textContent = state.underlineThickness;
       render();
       saveState();
     });
@@ -315,16 +430,93 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Clear workspace action
+  // Download Image Action
+  async function downloadImage() {
+    if (typeof html2canvas === 'undefined') {
+      alert("Error: html2canvas library is not loaded.");
+      return;
+    }
+
+    // Briefly hide the stamp controls if they are somehow visible during export
+    const stampControls = document.getElementById('stamp-controls');
+    const wasStampVisible = stampControls && stampControls.style.display !== 'none';
+    if (wasStampVisible) stampControls.style.display = 'none';
+
+    try {
+      const canvas = await html2canvas(paperSheet, {
+        scale: 2, // High resolution
+        useCORS: true,
+        backgroundColor: null
+      });
+      const dataUrl = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'Inkflow_Note.png';
+      a.click();
+    } catch (e) {
+      console.error("Failed to generate image", e);
+      alert("Failed to generate image.");
+    } finally {
+      if (wasStampVisible) stampControls.style.display = 'block';
+    }
+  }
+
+  if (btnDownload) {
+    btnDownload.addEventListener('click', downloadImage);
+  }
+
+  // Share Note Action
+  async function shareNote() {
+    if (typeof html2canvas === 'undefined') {
+      alert("Error: html2canvas library is not loaded.");
+      return;
+    }
+
+    try {
+      const canvas = await html2canvas(paperSheet, { scale: 2, useCORS: true, backgroundColor: null });
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+
+        const file = new File([blob], 'Inkflow_Note.png', { type: 'image/png' });
+
+        // Try using Web Share API if supported
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: 'Inkflow Note',
+              text: 'Here is my handwritten note!',
+              files: [file]
+            });
+            return;
+          } catch (err) {
+            console.log('Share API failed or user cancelled', err);
+          }
+        } else {
+           alert("Your browser does not support native file sharing. Use the Download Image option instead.");
+        }
+      }, 'image/png');
+    } catch (e) {
+      console.error("Failed to share image", e);
+      alert("Failed to share image.");
+    }
+  }
+
+  if (btnShare) {
+    btnShare.addEventListener('click', shareNote);
+  }
+
+  // Clear workspace action (New Note)
+  function clearWorkspace() {
+    if (confirm('Are you sure you want to clear your notepad text to start a new note?')) {
+      state.text = '';
+      if (txt) txt.value = '';
+      render();
+      saveState();
+    }
+  }
+
   if (btnClear) {
-    btnClear.addEventListener('click', () => {
-      if (confirm('Are you sure you want to clear your notepad text?')) {
-        state.text = '';
-        if (txt) txt.value = '';
-        render();
-        saveState();
-      }
-    });
+    btnClear.addEventListener('click', clearWorkspace);
   }
 
   // Print Action
@@ -333,6 +525,44 @@ document.addEventListener('DOMContentLoaded', () => {
       window.print();
     });
   }
+
+  // Keyboard Shortcuts for Fast Typing
+  document.addEventListener('keydown', (e) => {
+    // Check if ctrl key or meta key (Mac) is pressed
+    const isCtrl = e.ctrlKey || e.metaKey;
+
+    if (isCtrl) {
+      if (e.altKey) {
+        // Ctrl + Alt + S : Share Note
+        if (e.key.toLowerCase() === 's') {
+          e.preventDefault();
+          shareNote();
+        }
+        // Ctrl + Alt + N : New Note
+        else if (e.key.toLowerCase() === 'n') {
+          e.preventDefault();
+          clearWorkspace();
+        }
+      }
+      else {
+        // Ctrl + B : Bold Text
+        if (e.key.toLowerCase() === 'b') {
+          e.preventDefault();
+          insertFormatting('**', '**');
+        }
+        // Ctrl + U : Underline Text
+        else if (e.key.toLowerCase() === 'u') {
+          e.preventDefault();
+          insertFormatting('__', '__');
+        }
+        // Ctrl + S : Download Image
+        else if (e.key.toLowerCase() === 's') {
+          e.preventDefault();
+          downloadImage();
+        }
+      }
+    }
+  });
 
   // Initialize
   loadSavedState();
