@@ -71,6 +71,26 @@
           </select>
         </div>
 
+        <!-- Text Formatting Actions -->
+        <div class="form-group">
+          <label>Insert Formatting</label>
+          <div style="display: flex; gap: 8px;">
+            <button id="btn-bold" class="btn btn-secondary" style="flex: 1; padding: 6px;" title="Shortcut: Ctrl+B"><i class="fa-solid fa-bold"></i> Bold</button>
+            <button id="btn-underline" class="btn btn-secondary" style="flex: 1; padding: 6px;" title="Shortcut: Ctrl+U"><i class="fa-solid fa-underline"></i> Underline</button>
+          </div>
+          <p style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px;">Use `**text**` for bold and `__text__` for underline.</p>
+        </div>
+
+        <!-- Custom Format Sliders -->
+        <div class="form-group">
+          <label for="editor-bold-weight">Bold Weight <span id="bw-val">700</span></label>
+          <input type="range" id="editor-bold-weight" class="range-slider" min="100" max="900" step="100" value="700">
+        </div>
+        <div class="form-group">
+          <label for="editor-underline-thick">Underline Thickness <span id="ut-val">2</span>px</label>
+          <input type="range" id="editor-underline-thick" class="range-slider" min="1" max="10" step="1" value="2">
+        </div>
+
         <!-- Font size slider -->
         <div class="form-group">
           <label for="editor-size">Font Size <span id="size-val">28</span>px</label>
@@ -164,9 +184,11 @@
         </div>
 
         <!-- Actions -->
-        <div class="form-group" style="margin-top: 10px; gap: 12px;">
-          <button id="btn-print" class="btn btn-primary" style="width: 100%; padding: 12px;"><i class="fa-solid fa-file-pdf"></i> Print / Save as PDF</button>
-          <button id="btn-clear" class="btn btn-secondary" style="width: 100%; padding: 12px;"><i class="fa-solid fa-trash-can"></i> Clear Workspace</button>
+        <div class="form-group" style="margin-top: 10px; display: flex; flex-direction: column; gap: 12px;">
+          <button id="btn-download" class="btn btn-primary" style="width: 100%; padding: 12px;" title="Shortcut: Ctrl+S"><i class="fa-solid fa-download"></i> Download Image <span style="font-size: 11px; opacity: 0.8;">(Ctrl+S)</span></button>
+          <button id="btn-share" class="btn btn-primary" style="width: 100%; padding: 12px;" title="Shortcut: Ctrl+Alt+S"><i class="fa-solid fa-share-nodes"></i> Share Note <span style="font-size: 11px; opacity: 0.8;">(Ctrl+Alt+S)</span></button>
+          <button id="btn-print" class="btn btn-secondary" style="width: 100%; padding: 12px;"><i class="fa-solid fa-file-pdf"></i> Print / Save as PDF</button>
+          <button id="btn-clear" class="btn btn-secondary" style="width: 100%; padding: 12px;" title="Shortcut: Ctrl+Alt+N"><i class="fa-solid fa-file-lines"></i> New Note <span style="font-size: 11px; opacity: 0.8;">(Ctrl+Alt+N)</span></button>
         </div>
 
         <!-- Footer / Statistics -->
@@ -221,6 +243,7 @@
     </div>
   </footer>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="js/global.js"></script>
   <script src="js/editor.js"></script>
   <script src="js/stamp.js"></script>
