@@ -10,3 +10,9 @@
 127.0.0.1 - - [14/Jul/2026 15:58:58] "GET /js/stamp.js HTTP/1.1" 200 -
 127.0.0.1 - - [14/Jul/2026 15:58:58] "GET /css/global.css HTTP/1.1" 200 -
 127.0.0.1 - - [14/Jul/2026 15:58:58] "GET /js/global.js HTTP/1.1" 200 -
+127.0.0.1 - - [14/Jul/2026 16:54:19] "GET /editor.html HTTP/1.1" 200 -
+127.0.0.1 - - [14/Jul/2026 16:54:19] "GET /css/editor.css HTTP/1.1" 200 -
+127.0.0.1 - - [14/Jul/2026 16:54:19] "GET /js/editor.js HTTP/1.1" 200 -
+127.0.0.1 - - [14/Jul/2026 16:54:19] "GET /css/global.css HTTP/1.1" 200 -
+127.0.0.1 - - [14/Jul/2026 16:54:19] "GET /js/global.js HTTP/1.1" 200 -
+127.0.0.1 - - [14/Jul/2026 16:54:19] "GET /js/stamp.js HTTP/1.1" 200 -

@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const marginBox = document.getElementById('opt-margin');
   const btnBold = document.getElementById('btn-bold');
   const btnUnderline = document.getElementById('btn-underline');
+  const btnList = document.getElementById('btn-list');
   const bwSlider = document.getElementById('editor-bold-weight');
   const bwVal = document.getElementById('bw-val');
   const utSlider = document.getElementById('editor-underline-thick');
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnPrint = document.getElementById('btn-print');
   const btnDownload = document.getElementById('btn-download');
   const btnShare = document.getElementById('btn-share');
+  const btnSaveLocal = document.getElementById('btn-save-local');
   
   // Preset elements
   const presetPaperButtons = document.querySelectorAll('[data-paper]');
@@ -214,16 +216,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.paperPreset === 'grid') {
           // Grid/Graph lines drawing
           paperSheet.style.backgroundImage = `
-            linear-gradient(to right, ${lineColor} 1px, transparent 1px),
-            linear-gradient(to bottom, ${lineColor} 1px, transparent 1px)
+            repeating-linear-gradient(to right, transparent 0px, transparent ${lineHeight - 1}px, ${lineColor} ${lineHeight - 1}px, ${lineColor} ${lineHeight}px),
+            repeating-linear-gradient(to bottom, transparent 0px, transparent ${lineHeight - 1}px, ${lineColor} ${lineHeight - 1}px, ${lineColor} ${lineHeight}px)
           `;
-          paperSheet.style.backgroundSize = `${lineHeight}px ${lineHeight}px`;
+          paperSheet.style.backgroundSize = `100% 100%`;
           paperSheet.style.backgroundPosition = '0 0';
         } else if (state.paperPreset === 'blank') {
           paperSheet.style.backgroundImage = 'none';
         } else {
           // Horizontal Lined Ruled Drawing
-          paperSheet.style.backgroundImage = `repeating-linear-gradient(to bottom, transparent, transparent ${lineHeight - 1}px, ${lineColor} ${lineHeight}px)`;
+          // Fixed syntax for html2canvas compatibility
+          paperSheet.style.backgroundImage = `repeating-linear-gradient(transparent 0px, transparent ${lineHeight - 1}px, ${lineColor} ${lineHeight - 1}px, ${lineColor} ${lineHeight}px)`;
           paperSheet.style.backgroundSize = '100% ' + lineHeight + 'px';
           paperSheet.style.backgroundPosition = '0 30px';
         }
@@ -315,6 +318,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnUnderline) {
     btnUnderline.addEventListener('click', () => insertFormatting('__', '__'));
+  }
+
+  // Format as list
+  function formatAsList() {
+    if (!txt) return;
+    const start = txt.selectionStart;
+    const end = txt.selectionEnd;
+
+    // If text is selected, format the selected lines
+    // Otherwise format all lines
+    const targetText = (start !== end) ? txt.value.substring(start, end) : txt.value;
+
+    if (!targetText.trim()) return;
+
+    const lines = targetText.split('\n');
+    let formattedLines = [];
+    let counter = 1;
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      // Skip empty lines or already numbered lines
+      if (line.trim() === '') {
+        formattedLines.push(line);
+      } else if (line.match(/^(\s*)([0-9]+[.)]|\*|-|\+)\s+/)) {
+        formattedLines.push(line);
+      } else {
+        formattedLines.push(`${counter}) ${line}`);
+        counter++;
+      }
+    }
+
+    const newSegment = formattedLines.join('\n');
+
+    if (start !== end) {
+      txt.value = txt.value.substring(0, start) + newSegment + txt.value.substring(end);
+    } else {
+      txt.value = newSegment;
+    }
+
+    state.text = txt.value;
+    render();
+    saveState();
+  }
+
+  if (btnList) {
+    btnList.addEventListener('click', formatAsList);
   }
 
   if (bwSlider) {
@@ -515,6 +564,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Save locally as JSON Action
+  function saveLocally() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+    const a = document.createElement('a');
+    a.href = dataStr;
+    a.download = 'Inkflow_Note_Data.json';
+    a.click();
+  }
+
+  if (btnSaveLocal) {
+    btnSaveLocal.addEventListener('click', saveLocally);
+  }
+
   if (btnClear) {
     btnClear.addEventListener('click', clearWorkspace);
   }
@@ -542,6 +604,13 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (e.key.toLowerCase() === 'n') {
           e.preventDefault();
           clearWorkspace();
+        }
+      }
+      else if (e.shiftKey) {
+        // Ctrl + Shift + L : Numbered List
+        if (e.key.toLowerCase() === 'l') {
+          e.preventDefault();
+          formatAsList();
         }
       }
       else {

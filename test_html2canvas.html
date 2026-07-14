@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  #box {
+    width: 200px;
+    height: 200px;
+    background-color: #fefce8;
+    background-image: repeating-linear-gradient(transparent 0px, transparent 39px, #e5e7eb 39px, #e5e7eb 40px);
+    background-size: 100% 40px;
+    background-position: 0 30px;
+  }
+</style>
+</head>
+<body>
+  <div id="box">Hello</div>
+  <script>
+    setTimeout(() => {
+      html2canvas(document.getElementById('box')).then(canvas => {
+        document.body.appendChild(canvas);
+      });
+    }, 1000);
+  </script>
+</body>
+</html>
