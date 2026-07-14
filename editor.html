@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notepad Workspace - Inkflow</title>
+  <meta name="description" content="Use the interactive handwriting generator workspace. Customize fonts, line spacing, colors, and layouts. Download high-resolution vector PDF notes.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/editor.css">
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header>
+    <div class="container nav-container">
+      <a href="index.html" class="logo">
+        <i class="fa-solid fa-pen-nib"></i> Inkflow
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="editor.html" class="nav-link active">Notepad Workspace</a>
+        <a href="fonts.html" class="nav-link">Font Gallery</a>
+        <a href="about.html" class="nav-link">About</a>
+      </nav>
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-btn" aria-label="Toggle Theme">
+          <i class="fa-solid fa-moon"></i>
+          <i class="fa-solid fa-sun"></i>
+        </button>
+        <button id="menu-toggle" class="menu-btn" aria-label="Toggle Mobile Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Workspace Container -->
+  <section class="editor-section">
+    <div class="workspace-container">
+      
+      <!-- Left Sidebar (Controls) -->
+      <aside class="editor-sidebar">
+        <div class="editor-title">
+          <i class="fa-solid fa-sliders"></i> Notepad Controls
+        </div>
+        
+        <!-- Textarea input -->
+        <div class="form-group">
+          <label for="editor-txt">Type Text Below</label>
+          <textarea id="editor-txt" class="editor-textarea" placeholder="Start typing your notes..."></textarea>
+        </div>
+
+        <!-- Typography Settings -->
+        <div class="form-group">
+          <label for="editor-font">Handwriting Cursive Font</label>
+          <select id="editor-font" class="editor-select">
+            <option value="'Caveat', cursive">Caveat (Playful)</option>
+            <option value="'Nanum Pen Script', cursive">Nanum Pen Script (Stylized)</option>
+            <option value="'Kalam', cursive">Kalam (Ink Pen)</option>
+            <option value="'Architects Daughter', cursive">Architects Daughter (Sketch)</option>
+            <option value="'Patrick Hand', cursive">Patrick Hand (Friendly)</option>
+            <option value="'Indie Flower', cursive">Indie Flower (Bubbly)</option>
+            <option value="'Sacramento', cursive">Sacramento (Calligraphy)</option>
+            <option value="'Dancing Script', cursive">Dancing Script (Formal)</option>
+            <option value="'Pacifico', cursive">Pacifico (Retro Bold)</option>
+            <option value='"Playwrite IN", cursive'>Playwrite IN (Indian School Cursive)</option>
+            <option value="'Tillana', cursive">Tillana (Calligraphic ITF)</option>
+            <option value="'Dekko', cursive">Dekko (Casual ITF)</option>
+            <option value="'MyHandwriting', cursive">✍ MyHandwriting (Custom)</option>
+          </select>
+        </div>
+
+        <!-- Font size slider -->
+        <div class="form-group">
+          <label for="editor-size">Font Size <span id="size-val">28</span>px</label>
+          <input type="range" id="editor-size" class="range-slider" min="16" max="44" step="1" value="28">
+        </div>
+
+        <!-- Line Spacing slider -->
+        <div class="form-group">
+          <label for="editor-lh">Line Spacing <span id="lh-val">40</span>px</label>
+          <input type="range" id="editor-lh" class="range-slider" min="24" max="64" step="1" value="40">
+        </div>
+
+        <!-- Letter Spacing slider -->
+        <div class="form-group">
+          <label for="editor-ls">Letter Spacing <span id="ls-val">0</span>px</label>
+          <input type="range" id="editor-ls" class="range-slider" min="-5" max="10" step="0.5" value="0">
+        </div>
+
+        <!-- Word Spacing slider -->
+        <div class="form-group">
+          <label for="editor-ws">Word Spacing <span id="ws-val">0</span>px</label>
+          <input type="range" id="editor-ws" class="range-slider" min="-5" max="20" step="0.5" value="0">
+        </div>
+
+        <!-- Preset Paper Themes -->
+        <div class="form-group">
+          <label>Paper Style Presets</label>
+          <div class="preset-grid">
+            <button class="preset-btn active" data-paper="ruled">Notebook</button>
+            <button class="preset-btn" data-paper="legal">Legal Pad</button>
+            <button class="preset-btn" data-paper="grid">Graph Paper</button>
+            <button class="preset-btn" data-paper="vintage">Vintage</button>
+            <button class="preset-btn" data-paper="blank">Blank</button>
+          </div>
+        </div>
+
+        <!-- Toggles -->
+        <div class="form-group">
+          <label>Page Layout Guidelines</label>
+          <div class="toggle-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="opt-ruled" checked> Ruled Lines
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="opt-margin" checked> Margin Line
+            </label>
+          </div>
+        </div>
+
+        <!-- Preset Inks / Color Pickers -->
+        <div class="form-group">
+          <label>Pen Ink Color</label>
+          <div class="ink-list">
+            <button class="ink-color-btn active" data-ink="#1a2a6c" style="background-color: #1a2a6c;" aria-label="Gel Blue Ink"><i class="fa-solid fa-check"></i></button>
+            <button class="ink-color-btn" data-ink="#1f2937" style="background-color: #1f2937;" aria-label="Ballpoint Black Ink"><i class="fa-solid fa-check"></i></button>
+            <button class="ink-color-btn" data-ink="#991b1b" style="background-color: #991b1b;" aria-label="Calligraphy Red Ink"><i class="fa-solid fa-check"></i></button>
+            <button class="ink-color-btn" data-ink="#065f46" style="background-color: #065f46;" aria-label="Forest Green Ink"><i class="fa-solid fa-check"></i></button>
+            <button class="ink-color-btn" data-ink="#4f46e5" style="background-color: #4f46e5;" aria-label="Indigo Blue Ink"><i class="fa-solid fa-check"></i></button>
+            <input type="color" id="ink-custom" class="custom-ink-picker" value="#1a2a6c" title="Choose Custom Color">
+          </div>
+        </div>
+
+        <!-- Stamp Section -->
+        <div class="form-group stamp-section">
+          <label class="stamp-label"><i class="fa-solid fa-stamp"></i> Stamp / Signature Image</label>
+
+          <div id="stamp-drop-zone" class="stamp-drop-zone">
+            <input type="file" id="stamp-upload" accept="image/*" style="display:none;">
+            <div id="stamp-placeholder" class="stamp-placeholder">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>Click or drag image here</span>
+            </div>
+            <img id="stamp-preview-thumb" class="stamp-thumb" style="display:none;" alt="Stamp preview">
+          </div>
+
+          <div id="stamp-controls" class="stamp-controls" style="display:none;">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Size <span id="stamp-size-val">120</span>px</label>
+              <input type="range" id="stamp-size" class="range-slider" min="40" max="400" step="5" value="120">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Opacity <span id="stamp-opacity-val">100</span>%</label>
+              <input type="range" id="stamp-opacity" class="range-slider" min="10" max="100" step="5" value="100">
+            </div>
+            <div style="display:flex; gap:8px; margin-top:4px;">
+              <button id="stamp-rotate-btn" class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;"><i class="fa-solid fa-rotate-right"></i> Rotate</button>
+              <button id="stamp-remove-btn" class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px; color:#ef4444;"><i class="fa-solid fa-trash-can"></i> Remove</button>
+            </div>
+            <p style="font-size:11px; color:var(--text-tertiary); margin-top:4px; text-align:center;"><i class="fa-solid fa-hand-pointer"></i> Drag stamp on paper to reposition</p>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-group" style="margin-top: 10px; gap: 12px;">
+          <button id="btn-print" class="btn btn-primary" style="width: 100%; padding: 12px;"><i class="fa-solid fa-file-pdf"></i> Print / Save as PDF</button>
+          <button id="btn-clear" class="btn btn-secondary" style="width: 100%; padding: 12px;"><i class="fa-solid fa-trash-can"></i> Clear Workspace</button>
+        </div>
+
+        <!-- Footer / Statistics -->
+        <div class="sidebar-footer">
+          <span>Words: <strong id="word-count">0</strong></span>
+          <span>Characters: <strong id="char-count">0</strong></span>
+        </div>
+      </aside>
+
+      <!-- Right Panel (Paper Canvas Workspace) -->
+      <main class="paper-workspace">
+        <div id="paper-sheet" class="paper-sheet">
+          <div id="margin-line" class="paper-margin-line"></div>
+          <div id="paper-out" class="paper-content-out"></div>
+          <!-- Stamp overlay: draggable, positioned absolutely inside the paper -->
+          <img id="stamp-img" class="stamp-overlay" style="display:none;" alt="Stamp" draggable="false">
+        </div>
+      </main>
+
+    </div>
+  </section>
+
+  <!-- Footer (will be hidden during print) -->
+  <footer>
+    <div class="container footer-grid">
+      <div class="footer-about">
+        <a href="index.html" class="logo"><i class="fa-solid fa-pen-nib"></i> Inkflow</a>
+        <p>A dynamic handwriting notepad designed to bridge digital convenience with analog style.</p>
+      </div>
+      <div>
+        <h4 class="footer-title">Navigation</h4>
+        <ul class="footer-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="editor.html">Notepad Workspace</a></li>
+          <li><a href="fonts.html">Font Gallery</a></li>
+          <li><a href="about.html">About</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="footer-title">Handwriting Fonts</h4>
+        <ul class="footer-links">
+          <li><a href="https://fonts.google.com/specimen/Caveat" target="_blank" rel="noopener">Caveat</a></li>
+          <li><a href="https://fonts.google.com/specimen/Nanum+Pen+Script" target="_blank" rel="noopener">Nanum Pen Script</a></li>
+          <li><a href="https://fonts.google.com/specimen/Kalam" target="_blank" rel="noopener">Kalam</a></li>
+          <li><a href="https://fonts.google.com/specimen/Architects+Daughter" target="_blank" rel="noopener">Architects Daughter</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p>&copy; 2026 Inkflow Notepad. All rights reserved.</p>
+      <p>Designed with <i class="fa-solid fa-heart" style="color: #ec4899;"></i> for beautiful writing</p>
+    </div>
+  </footer>
+
+  <script src="js/global.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/stamp.js"></script>
+</body>
+</html>

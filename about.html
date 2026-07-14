@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About - Inkflow Notepad</title>
+  <meta name="description" content="Learn more about Inkflow, the digital handwriting emulator. Find out how we render realistic notes and how to print your results.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/global.css">
+  <style>
+    .about-section {
+      padding: 140px 0 80px 0;
+    }
+    .about-grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 60px;
+      align-items: center;
+      margin-bottom: 80px;
+    }
+    .about-content h2 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 20px;
+    }
+    .about-content p {
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+    .about-ill {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      box-shadow: var(--shadow-md);
+      position: relative;
+    }
+    .ill-paper {
+      background-color: var(--paper-bg-ruled);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px 24px 24px 44px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .ill-margin {
+      position: absolute;
+      left: 32px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background-color: var(--paper-margin-ruled);
+    }
+    .ill-text {
+      font-family: 'Caveat', cursive;
+      font-size: 26px;
+      line-height: 38px;
+      color: #1a2a6c;
+      background-image: repeating-linear-gradient(to bottom, transparent, transparent 37px, var(--border-color) 38px);
+      background-position: 0 10px;
+      padding-top: 10px;
+    }
+    .tech-stack {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      margin-bottom: 60px;
+    }
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 32px;
+      margin-top: 30px;
+    }
+    .tech-item {
+      text-align: center;
+    }
+    .tech-icon {
+      font-size: 36px;
+      color: var(--accent-color);
+      margin-bottom: 16px;
+    }
+    .tech-name {
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .tech-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    @media (max-width: 768px) {
+      .about-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header>
+    <div class="container nav-container">
+      <a href="index.html" class="logo">
+        <i class="fa-solid fa-pen-nib"></i> Inkflow
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="editor.html" class="nav-link">Notepad Workspace</a>
+        <a href="fonts.html" class="nav-link">Font Gallery</a>
+        <a href="about.html" class="nav-link active">About</a>
+      </nav>
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-btn" aria-label="Toggle Theme">
+          <i class="fa-solid fa-moon"></i>
+          <i class="fa-solid fa-sun"></i>
+        </button>
+        <a href="editor.html" class="btn btn-primary">Start Writing</a>
+        <button id="menu-toggle" class="menu-btn" aria-label="Toggle Mobile Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- About Content -->
+  <section class="about-section">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-content">
+          <span class="hero-tag"><i class="fa-solid fa-circle-info"></i> Our Mission</span>
+          <h2 style="margin-top: 10px;">Bridging Digital Convenience with Analog Style</h2>
+          <p>
+            Writing by hand triggers cognitive connections that typing cannot match. However, the convenience, editability, and speed of digital typing make notebooks less practical for modern, fast-paced workflows.
+          </p>
+          <p>
+            Inkflow was created to offer the best of both worlds. By utilizing premium web font rendering, advanced linear-gradient paper structures, and dynamic controls, you can compose your thoughts on a keyboard while instantly generating a layout that feels personal, hand-drafted, and artistic.
+          </p>
+          <p>
+            Whether you want to generate realistic letters, recipe cards, formatted study notes, or digital diary pages, Inkflow provides a highly customizable environment to design your writing style.
+          </p>
+        </div>
+        <div class="about-ill">
+          <div class="ill-paper">
+            <div class="ill-margin"></div>
+            <div class="ill-text">
+              Hello Friend!<br>
+              This is a demonstration of cursive text printed on digital paper.<br>
+              It feels real!
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tech Stack -->
+      <div class="tech-stack">
+        <h2 style="font-size: 28px; font-weight: 800; text-align: center;">How It Works Under the Hood</h2>
+        <div class="tech-grid">
+          <div class="tech-item">
+            <div class="tech-icon"><i class="fa-solid fa-font"></i></div>
+            <h3 class="tech-name">Google Web Fonts</h3>
+            <p class="tech-desc">Integrates high-quality handwriting font-families dynamically mapped in the CSS.</p>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon"><i class="fa-solid fa-lines-leaning"></i></div>
+            <h3 class="tech-name">Repeating Gradients</h3>
+            <p class="tech-desc">Paper ruled lines are drawn using background-image gradients, scaling precisely with line-height adjustments.</p>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon"><i class="fa-solid fa-print"></i></div>
+            <h3 class="tech-name">Vector Printing</h3>
+            <p class="tech-desc">Custom print layout files format print requests directly to high-resolution vector PDF formatting.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-grid">
+      <div class="footer-about">
+        <a href="index.html" class="logo"><i class="fa-solid fa-pen-nib"></i> Inkflow</a>
+        <p>A dynamic handwriting notepad designed to bridge digital convenience with analog style.</p>
+      </div>
+      <div>
+        <h4 class="footer-title">Navigation</h4>
+        <ul class="footer-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="editor.html">Notepad Workspace</a></li>
+          <li><a href="fonts.html">Font Gallery</a></li>
+          <li><a href="about.html">About</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="footer-title">Handwriting Fonts</h4>
+        <ul class="footer-links">
+          <li><a href="https://fonts.google.com/specimen/Caveat" target="_blank" rel="noopener">Caveat</a></li>
+          <li><a href="https://fonts.google.com/specimen/Nanum+Pen+Script" target="_blank" rel="noopener">Nanum Pen Script</a></li>
+          <li><a href="https://fonts.google.com/specimen/Kalam" target="_blank" rel="noopener">Kalam</a></li>
+          <li><a href="https://fonts.google.com/specimen/Architects+Daughter" target="_blank" rel="noopener">Architects Daughter</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p>&copy; 2026 Inkflow Notepad. All rights reserved.</p>
+      <p>Designed with <i class="fa-solid fa-heart" style="color: #ec4899;"></i> for beautiful writing</p>
+    </div>
+  </footer>
+
+  <script src="js/global.js"></script>
+</body>
+</html>

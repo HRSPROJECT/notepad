@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inkflow Notepad - Beautiful Typed Handwriting</title>
+  <meta name="description" content="Generate beautiful cursive handwriting notebook pages from your typed text. Customize fonts, line spacing, margins, paper styling, and print or export as PDF.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header>
+    <div class="container nav-container">
+      <a href="index.html" class="logo">
+        <i class="fa-solid fa-pen-nib"></i> Inkflow
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link active">Home</a>
+        <a href="editor.html" class="nav-link">Notepad Workspace</a>
+        <a href="fonts.html" class="nav-link">Font Gallery</a>
+        <a href="about.html" class="nav-link">About</a>
+      </nav>
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-btn" aria-label="Toggle Theme">
+          <i class="fa-solid fa-moon"></i>
+          <i class="fa-solid fa-sun"></i>
+        </button>
+        <a href="editor.html" class="btn btn-primary">Start Writing</a>
+        <button id="menu-toggle" class="menu-btn" aria-label="Toggle Mobile Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-tag">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Transform your digital notes
+      </div>
+      <h1 class="hero-title">Write digital notes in <span>beautiful handwriting</span></h1>
+      <p class="hero-subtitle">
+        Type your notes, recipes, or ideas, and watch them convert instantly into realistic handwriting styled cursive script on authentic lined notebook paper.
+      </p>
+      <div class="hero-actions">
+        <a href="editor.html" class="btn btn-primary btn-lg"><i class="fa-solid fa-pen-to-square"></i> Open Notepad Workspace</a>
+        <a href="fonts.html" class="btn btn-secondary btn-lg"><i class="fa-solid fa-font"></i> Explore Handwriting Fonts</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Why Use Inkflow?</h2>
+        <p class="section-subtitle">A digital notepad built for clarity, customization, and realistic aesthetics.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-palette"></i></div>
+          <h3 class="feature-title">Dynamic Design</h3>
+          <p class="feature-desc">Adjust font sizes, line heights, margins, and paper designs to match your precise preferences. See updates instantly.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-feather"></i></div>
+          <h3 class="feature-title">Realistic Ink & Paper</h3>
+          <p class="feature-desc">Choose from authentic ink colors (Gel Blue, Calligraphy Red, Forest Green) and paper styles like legal yellow pad or graph paper.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-file-pdf"></i></div>
+          <h3 class="feature-title">Print & PDF Export</h3>
+          <p class="feature-desc">Export your completed cursive sheets as highly professional PDFs or print them directly using our optimized print stylesheets.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-floppy-disk"></i></div>
+          <h3 class="feature-title">Persistent Auto-Save</h3>
+          <p class="feature-desc">Never lose your notes. Everything you write is saved automatically to your local browser storage and loaded when you return.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sandbox Section -->
+  <section class="sandbox-section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">See It In Action</h2>
+        <p class="section-subtitle">Type below to see the conversion happening live in the preview pane.</p>
+      </div>
+      <div class="sandbox-container">
+        <!-- Input Area -->
+        <div class="sandbox-input-area">
+          <textarea id="sandbox-txt" class="sandbox-textarea" placeholder="Type something here to see it convert...">Dear Diary,
+
+Today I built Inkflow, a clean writing pad that turns my typed notes into cursive. It looks so neat and realistic!
+
+Try changing the font style and adjustments below to see how it works.</textarea>
+          <div class="sandbox-controls">
+            <div class="sandbox-control-group">
+              <label for="sb-font">Cursive Font</label>
+              <select id="sb-font" class="sandbox-select">
+                <option value="'Caveat', cursive">Caveat</option>
+                <option value="'Nanum Pen Script', cursive">Nanum Pen Script</option>
+                <option value="'Kalam', cursive">Kalam</option>
+                <option value="'Architects Daughter', cursive">Architects Daughter</option>
+                <option value="'Patrick Hand', cursive">Patrick Hand</option>
+                <option value='"Playwrite IN", cursive'>Playwrite IN</option>
+                <option value="'Tillana', cursive">Tillana</option>
+                <option value="'Dekko', cursive">Dekko</option>
+                <option value="'MyHandwriting', cursive">✍ MyHandwriting (Custom)</option>
+              </select>
+            </div>
+            <div class="sandbox-control-group">
+              <label for="sb-ink">Ink Inkflow</label>
+              <select id="sb-ink" class="sandbox-select">
+                <option value="#1a2a6c">Gel Blue</option>
+                <option value="#1f2937">Ballpoint Black</option>
+                <option value="#991b1b">Calligraphy Red</option>
+                <option value="#065f46">Forest Green</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Output Area -->
+        <div class="sandbox-output-area">
+          <div id="sb-paper" class="sandbox-paper">
+            <div class="sandbox-margin-line"></div>
+            <div id="sb-out" class="sandbox-text-out"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Banner Section -->
+  <section class="container">
+    <div class="cta-banner">
+      <h2 class="cta-title">Ready to write a full page?</h2>
+      <p class="cta-desc">Open the full notepad workspace to customize page size, margin settings, layout patterns, and download your results.</p>
+      <a href="editor.html" class="btn btn-primary"><i class="fa-solid fa-chevron-right"></i> Open Workspace</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-grid">
+      <div class="footer-about">
+        <a href="index.html" class="logo"><i class="fa-solid fa-pen-nib"></i> Inkflow</a>
+        <p>A dynamic handwriting notepad designed to bridge digital convenience with analog style.</p>
+      </div>
+      <div>
+        <h4 class="footer-title">Navigation</h4>
+        <ul class="footer-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="editor.html">Notepad Workspace</a></li>
+          <li><a href="fonts.html">Font Gallery</a></li>
+          <li><a href="about.html">About</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="footer-title">Handwriting Fonts</h4>
+        <ul class="footer-links">
+          <li><a href="https://fonts.google.com/specimen/Caveat" target="_blank" rel="noopener">Caveat</a></li>
+          <li><a href="https://fonts.google.com/specimen/Nanum+Pen+Script" target="_blank" rel="noopener">Nanum Pen Script</a></li>
+          <li><a href="https://fonts.google.com/specimen/Kalam" target="_blank" rel="noopener">Kalam</a></li>
+          <li><a href="https://fonts.google.com/specimen/Architects+Daughter" target="_blank" rel="noopener">Architects Daughter</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p>&copy; 2026 Inkflow Notepad. All rights reserved.</p>
+      <p>Designed with <i class="fa-solid fa-heart" style="color: #ec4899;"></i> for beautiful writing</p>
+    </div>
+  </footer>
+
+  <script src="js/global.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const sandboxTxt = document.getElementById('sandbox-txt');
+      const sbFont = document.getElementById('sb-font');
+      const sbInk = document.getElementById('sb-ink');
+      const sbOut = document.getElementById('sb-out');
+
+      function updateSandbox() {
+        sbOut.style.fontFamily = sbFont.value;
+        sbOut.style.color = sbInk.value;
+        sbOut.textContent = sandboxTxt.value;
+      }
+
+      [sandboxTxt, sbFont, sbInk].forEach(el => el.addEventListener('input', updateSandbox));
+      updateSandbox();
+    });
+  </script>
+</body>
+</html>

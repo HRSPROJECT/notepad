@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Font Gallery - Inkflow Notepad</title>
+  <meta name="description" content="Browse our catalog of premium handwriting and cursive script fonts. Test fonts in real-time and load them directly into the editor workspace.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/fonts.css">
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header>
+    <div class="container nav-container">
+      <a href="index.html" class="logo">
+        <i class="fa-solid fa-pen-nib"></i> Inkflow
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="editor.html" class="nav-link">Notepad Workspace</a>
+        <a href="fonts.html" class="nav-link active">Font Gallery</a>
+        <a href="about.html" class="nav-link">About</a>
+      </nav>
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-btn" aria-label="Toggle Theme">
+          <i class="fa-solid fa-moon"></i>
+          <i class="fa-solid fa-sun"></i>
+        </button>
+        <a href="editor.html" class="btn btn-primary">Start Writing</a>
+        <button id="menu-toggle" class="menu-btn" aria-label="Toggle Mobile Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Gallery Section -->
+  <section class="gallery-section">
+    <div class="container">
+      <div class="gallery-header">
+        <h1 class="hero-tag"><i class="fa-solid fa-font"></i> Typography Catalog</h1>
+        <h2 class="section-title" style="text-align: left; font-size: 38px; margin-top: 10px;">Handwriting Styles</h2>
+        <p class="section-subtitle" style="text-align: left; margin: 0; max-width: 600px;">Explore beautiful cursive and pen-drawn script fonts. Enter custom text below to preview all fonts simultaneously.</p>
+      </div>
+
+      <!-- Controls -->
+      <div class="control-bar">
+        <div class="preview-input-group">
+          <label for="preview-text">Preview Text</label>
+          <input type="text" id="preview-text" class="preview-text-box" placeholder="Type custom preview text...">
+        </div>
+        <div class="filter-group">
+          <label for="search-font">Search Fonts</label>
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="search-font" placeholder="Filter by name or style...">
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid -->
+      <div id="font-grid" class="font-grid">
+        <!-- Rendered by fonts.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-grid">
+      <div class="footer-about">
+        <a href="index.html" class="logo"><i class="fa-solid fa-pen-nib"></i> Inkflow</a>
+        <p>A dynamic handwriting notepad designed to bridge digital convenience with analog style.</p>
+      </div>
+      <div>
+        <h4 class="footer-title">Navigation</h4>
+        <ul class="footer-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="editor.html">Notepad Workspace</a></li>
+          <li><a href="fonts.html">Font Gallery</a></li>
+          <li><a href="about.html">About</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="footer-title">Handwriting Fonts</h4>
+        <ul class="footer-links">
+          <li><a href="https://fonts.google.com/specimen/Caveat" target="_blank" rel="noopener">Caveat</a></li>
+          <li><a href="https://fonts.google.com/specimen/Nanum+Pen+Script" target="_blank" rel="noopener">Nanum Pen Script</a></li>
+          <li><a href="https://fonts.google.com/specimen/Kalam" target="_blank" rel="noopener">Kalam</a></li>
+          <li><a href="https://fonts.google.com/specimen/Architects+Daughter" target="_blank" rel="noopener">Architects Daughter</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p>&copy; 2026 Inkflow Notepad. All rights reserved.</p>
+      <p>Designed with <i class="fa-solid fa-heart" style="color: #ec4899;"></i> for beautiful writing</p>
+    </div>
+  </footer>
+
+  <script src="js/global.js"></script>
+  <script src="js/fonts.js"></script>
+</body>
+</html>
