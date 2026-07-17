@@ -106,17 +106,75 @@ document.addEventListener('DOMContentLoaded', () => {
       const isVisionModel = model.toLowerCase().includes('vision') || model.toLowerCase().includes('scout');
       let contentPayload;
 
+      const systemPrompt = `You are an OCR and document formatting assistant specialized in handwritten medical purchase orders.
+
+TASK:
+Read the uploaded image carefully and convert it into structured text while preserving the original layout exactly.
+
+RULES:
+1. Identify every supplier/distributor heading.
+2. Extract every medicine exactly as written. Do NOT correct spellings unless the text is unreadable.
+3. Preserve strengths, dosage forms, pack sizes, company names, and remarks.
+4. Company names in brackets such as (Alkem), (Cipla), (Dr. Reddy), (Nett), (Big), (Small), etc. must remain immediately after the medicine name exactly like the original. Never move them to a separate column.
+5. Do not add or remove medicines.
+6. Keep numbering starting from ① for each supplier.
+7. If a Note section exists, copy it exactly.
+8. Ignore stamps, page decorations, and ruled lines unless they contain readable text.
+9. If any word is unclear, write [unclear] instead of guessing.
+10. Output only the formatted text. No explanations.
+
+FORMAT:
+
+# Supplier Name
+
+①   Quantity        Medicine Name (Remarks)
+②   Quantity        Medicine Name (Remarks)
+③   Quantity        Medicine Name (Remarks)
+
+Example:
+
+Sanjay Trading Company
+
+①   6×6 Tab       Azicip 250mg
+②   1×10 Tab      Cefix 200DT
+③   2×100gm       Clocip Dusting Powder (Big)
+④   6×4 Cap       Gemsoline DS 60K Cap
+⑤   3×10 Tab      Olox-OZ
+⑥   2×100ml       Phenseeyl-DX Cough-Syp
+⑦   10×10 Tab     Powerflam-MR (Alkem)
+⑧   3×10 Cap      Rabesee DSR Cap (Cipla)
+⑨   3×10 Cap      Pantosec DSR
+
+Note:
+Please don't forget to upload bill on email because it takes so much time to feed it manually in the System. (Supply to Divakar.)
+
+Kumar Pharmaceuticals
+
+①   10×2×2 Tab    Crocin Advance 500mg
+②   1×10×1 Tab    Thyrox 75mg
+③   1×10 Cap      Vibact Cap
+④   3Hx10's Cap   Doxt SL 100mg (Dr. Reddy) (Nett)
+⑤   3×60gm        Candid Powder (Small) (Nett)
+
+New Mahalaxmi Agency
+
+①   1×40 Tab      Sutshekhar Ras (Baidyanath)
+②   5×60ml        Mebarid Syp (Phyto)
+③   2×50gm        Dikamali Churna (Pushparaj)
+④   2×50gm        Jeshtamadh Churna (Pushparaj)
+
+IMPORTANT:
+- Keep remarks attached to the medicine name.
+- Preserve spacing for readability.
+- Never create a separate remarks column.
+- Do not use markdown tables.
+- Return plain text inside a code block only.`;
+
       if (isVisionModel) {
         contentPayload = [
           {
             type: 'text',
-            text: `You are an expert medical OCR assistant. Your job is to transcribe the medicine list from the image and format it EXACTLY in the clean note order layout style shown.
-Follow these rules:
-1. Extract distributor/company titles (e.g., Sanjay Trading Company, Kumar Pharmaceuticals, New Mahalaxmi Agency) and format them clearly at the top of their respective sections.
-2. Under each company/distributor, list each medicine line. Each line must extract the quantity/packaging prefix (e.g. "6x6 Tab", "1x10 Tab", "2x100gm", "10x2x2 Tab") followed by the medicine name and strength/details (e.g. "Azicip 250mg", "Crocin Advance 500mg").
-3. Format lists under each company using circled numbers (①, ②, ③, ④, ⑤, ⑥, ⑦, ⑧, ⑨, ⑩...).
-4. Include any notes (e.g. "Note: Please dont forget to upload bill...") or pharmacy details (e.g. "Jeevan Medico & Gen. Stores...").
-5. Return ONLY the transcribed text. Do not wrap the text in markdown code blocks like \`\`\` or include any introduction or commentary.`
+            text: systemPrompt
           },
           {
             type: 'image_url',
@@ -126,16 +184,7 @@ Follow these rules:
           }
         ];
       } else {
-        contentPayload = `You are an expert medical OCR assistant. Below is the base64-encoded image of the medicine list prescription:
-${base64ImageStr}
-
-Your job is to transcribe the medicine list from the image and format it EXACTLY in the clean note order layout style shown.
-Follow these rules:
-1. Extract distributor/company titles (e.g., Sanjay Trading Company, Kumar Pharmaceuticals, New Mahalaxmi Agency) and format them clearly at the top of their respective sections.
-2. Under each company/distributor, list each medicine line. Each line must extract the quantity/packaging prefix (e.g. "6x6 Tab", "1x10 Tab", "2x100gm", "10x2x2 Tab") followed by the medicine name and strength/details (e.g. "Azicip 250mg", "Crocin Advance 500mg").
-3. Format lists under each company using circled numbers (①, ②, ③, ④, ⑤, ⑥, ⑦, ⑧, ⑨, ⑩...).
-4. Include any notes (e.g. "Note: Please dont forget to upload bill...") or pharmacy details (e.g. "Jeevan Medico & Gen. Stores...").
-5. Return ONLY the transcribed text. Do not wrap the text in markdown code blocks like \`\`\` or include any introduction or commentary.`;
+        contentPayload = `${systemPrompt}\n\nHere is the base64-encoded image to transcribe:\n${base64ImageStr}`;
       }
 
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -165,8 +214,11 @@ Follow these rules:
       const transcribedText = data.choices[0]?.message?.content;
 
       if (transcribedText) {
+        let cleanText = transcribedText.trim();
+        // Remove code block backticks if returned by the model
+        cleanText = cleanText.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
         if (editorTxt) {
-          editorTxt.value = transcribedText.trim();
+          editorTxt.value = cleanText;
           // Dispatch synthetic input event to trigger render and state persistence
           editorTxt.dispatchEvent(new Event('input'));
         }
