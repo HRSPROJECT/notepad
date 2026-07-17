@@ -220,7 +220,7 @@ IMPORTANT:
         if (editorTxt) {
           editorTxt.value = cleanText;
           // Dispatch synthetic input event to trigger render and state persistence
-          editorTxt.dispatchEvent(new Event('input'));
+          editorTxt.dispatchEvent(new Event('input', { bubbles: true }));
         }
         alert('Medicine list transcribed and formatted successfully!');
       } else {

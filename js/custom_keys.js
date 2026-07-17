@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Intercept notepad typing and perform replacements
+  // Use capture phase to ensure this runs before editor.js listener
   txt.addEventListener('input', (e) => {
     // Prevent infinite loops from synthetic events
     if (e.isTrusted === false) return;
@@ -107,12 +108,61 @@ document.addEventListener('DOMContentLoaded', () => {
         const newCursorPos = prefix.length + ck.replacement.length;
         txt.setSelectionRange(newCursorPos, newCursorPos);
 
+        // Stop the current event from reaching editor.js with old value
+        e.stopImmediatePropagation();
+
         // Dispatch synthetic input event so editor.js captures the update
-        txt.dispatchEvent(new Event('input'));
+        const syntheticEvent = new Event('input', { bubbles: true, cancelable: false });
+        txt.dispatchEvent(syntheticEvent);
         break;
       }
     }
-  });
+  }, true); // Use capture phase
+
+  // Also handle custom keys when typing directly on the contenteditable sheet
+  const paperOut = document.getElementById('paper-out');
+  if (paperOut) {
+    paperOut.addEventListener('beforeinput', (e) => {
+      // Only process character insertions
+      if (e.inputType !== 'insertText' || !e.data) return;
+
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+
+      const range = selection.getRangeAt(0);
+      
+      // Get text content before cursor
+      const textNode = range.startContainer;
+      if (textNode.nodeType !== Node.TEXT_NODE) return;
+      
+      const textBeforeCursor = textNode.textContent.substring(0, range.startOffset) + e.data;
+
+      for (const ck of customKeys) {
+        if (ck.trigger && textBeforeCursor.endsWith(ck.trigger)) {
+          // Prevent the default character insertion
+          e.preventDefault();
+
+          // Calculate the replacement
+          const beforeTrigger = textBeforeCursor.substring(0, textBeforeCursor.length - ck.trigger.length);
+          const replacement = beforeTrigger + ck.replacement;
+
+          // Replace the text in the text node
+          const afterCursor = textNode.textContent.substring(range.startOffset);
+          textNode.textContent = replacement + afterCursor;
+
+          // Set cursor position after replacement
+          range.setStart(textNode, replacement.length);
+          range.setEnd(textNode, replacement.length);
+          selection.removeAllRanges();
+          selection.addRange(range);
+
+          // Trigger input event for synchronization
+          paperOut.dispatchEvent(new Event('input', { bubbles: true }));
+          break;
+        }
+      }
+    }, true);
+  }
 
   // Handle adding new shortcut mappings
   if (addBtn && triggerInput && replacementInput) {

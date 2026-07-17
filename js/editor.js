@@ -159,10 +159,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Apply text content & fonts
     if (paperOut) {
       // Convert Markdown to spans, then safely sanitize all DOM nodes to prevent XSS
-      let htmlContent = state.text
-        .replace(/^(Date\s*:\s*[^\n]+)/im, '<span style="float: right;">$1</span>')
-        .replace(/\*\*(.*?)\*\*/g, `<span style="font-weight: ${state.boldWeight};">$1</span>`)
-        .replace(/__(.*?)__/g, `<span style="text-decoration: underline; text-decoration-thickness: ${state.underlineThickness}px;">$1</span>`);
+      // First escape HTML entities to prevent XSS
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+      
+      // Escape all HTML first
+      let escapedText = escapeHtml(state.text);
+      
+      // Process markdown, then apply Date float styling
+      // Use [\s\S] instead of . to match newlines as well
+      // Note: After escaping, ** becomes ** (no change), so markdown markers are preserved
+      let htmlContent = escapedText
+        .replace(/\*\*([\s\S]*?)\*\*/g, `<span style="font-weight: ${state.boldWeight};">$1</span>`)
+        .replace(/__([\s\S]*?)__/g, `<span style="text-decoration: underline; text-decoration-thickness: ${state.underlineThickness}px;">$1</span>`)
+        .replace(/^(Date\s*:\s*[^\n]+)/im, '<span style="float: right;">$1</span>');
 
       const tempSanitize = document.createElement('div');
       tempSanitize.innerHTML = htmlContent;
@@ -398,23 +411,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnBold) {
     btnBold.addEventListener('click', () => {
-      if (isSelectionInSheet()) {
-        document.execCommand('bold');
-        paperOut.dispatchEvent(new Event('input'));
-      } else {
-        insertFormatting('**', '**');
-      }
+      // Always insert markdown in textarea, regardless of where selection is
+      insertFormatting('**', '**');
     });
   }
 
   if (btnUnderline) {
     btnUnderline.addEventListener('click', () => {
-      if (isSelectionInSheet()) {
-        document.execCommand('underline');
-        paperOut.dispatchEvent(new Event('input'));
-      } else {
-        insertFormatting('__', '__');
-      }
+      // Always insert markdown in textarea, regardless of where selection is
+      insertFormatting('__', '__');
     });
   }
 
@@ -664,12 +669,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // Ctrl + B : Bold Text
         if (e.key.toLowerCase() === 'b') {
           e.preventDefault();
-          insertFormatting('**', '**');
+          // Check if focus is on the contenteditable sheet
+          if (document.activeElement === paperOut) {
+            document.execCommand('bold');
+            paperOut.dispatchEvent(new Event('input'));
+          } else {
+            insertFormatting('**', '**');
+          }
         }
         // Ctrl + U : Underline Text
         else if (e.key.toLowerCase() === 'u') {
           e.preventDefault();
-          insertFormatting('__', '__');
+          // Check if focus is on the contenteditable sheet
+          if (document.activeElement === paperOut) {
+            document.execCommand('underline');
+            paperOut.dispatchEvent(new Event('input'));
+          } else {
+            insertFormatting('__', '__');
+          }
         }
         // Ctrl + S : Download Image
         else if (e.key.toLowerCase() === 's') {
@@ -705,8 +722,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let suffix = '';
 
         // Match styled tags & spans
-        const isBold = (node.style.fontWeight && (parseInt(node.style.fontWeight) >= 600 || node.style.fontWeight === 'bold')) || tagName === 'b' || tagName === 'strong';
-        const isUnderline = node.style.borderBottom || node.style.textDecoration.includes('underline') || tagName === 'u';
+        const computedWeight = node.style.fontWeight || window.getComputedStyle(node).fontWeight;
+        const isBold = (computedWeight && (parseInt(computedWeight) >= 600 || computedWeight === 'bold')) || tagName === 'b' || tagName === 'strong';
+        const computedDecoration = node.style.textDecoration || window.getComputedStyle(node).textDecoration;
+        const isUnderline = node.style.borderBottom || (computedDecoration && computedDecoration.includes('underline')) || tagName === 'u';
 
         if (isBold) { prefix += '**'; suffix = '**' + suffix; }
         if (isUnderline) { prefix += '__'; suffix = '__' + suffix; }
@@ -751,8 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return lines
       .map(line => line.replace(/\r/g, '').trimEnd())
-      .join('\n')
-      .replace(/\n\n+/g, '\n');
+      .join('\n');
   }
 
   // ── Direct editing content sync ──────────────────────────────
