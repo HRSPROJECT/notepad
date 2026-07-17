@@ -33,9 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const presetPaperButtons = document.querySelectorAll('[data-paper]');
   const presetInkButtons = document.querySelectorAll('[data-ink]');
 
+  const today = new Date();
+  const defaultDateStr = `Date: ${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
+
   // Application State
   let state = {
-    text: `6x6 Tab Azicip 250mg\n1x10 Tab Cefix 200DT\n2x100gm Clocip Dusting Powder (Big)\n6x4 Cap Gemsoline DS 60K Cap`,
+    text: `${defaultDateStr}\n6x6 Tab Azicip 250mg\n1x10 Tab Cefix 200DT\n2x100gm Clocip Dusting Powder (Big)\n6x4 Cap Gemsoline DS 60K Cap`,
     font: "'Caveat', cursive",
     size: 28,
     lineHeight: 40,
@@ -150,22 +153,59 @@ document.addEventListener('DOMContentLoaded', () => {
     if (lhVal) lhVal.textContent = lineHeight;
     if (lsVal) lsVal.textContent = state.letterSpacing;
     if (wsVal) wsVal.textContent = state.wordSpacing;
+    const floatSizeVal = document.getElementById('float-size-val');
+    if (floatSizeVal) floatSizeVal.textContent = fontSize;
 
     // Apply text content & fonts
     if (paperOut) {
-      // Escape HTML to prevent XSS, then parse custom markdown
+      // Convert Markdown to spans, then safely sanitize all DOM nodes to prevent XSS
       let htmlContent = state.text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+        .replace(/^(Date\s*:\s*[^\n]+)/im, '<span style="float: right;">$1</span>')
+        .replace(/\*\*(.*?)\*\*/g, `<span style="font-weight: ${state.boldWeight};">$1</span>`)
+        .replace(/__(.*?)__/g, `<span style="text-decoration: underline; text-decoration-thickness: ${state.underlineThickness}px;">$1</span>`);
 
-      // Replace **bold** with <span>
-      htmlContent = htmlContent.replace(/\*\*(.*?)\*\*/g, `<span style="font-weight: ${state.boldWeight};">$1</span>`);
+      const tempSanitize = document.createElement('div');
+      tempSanitize.innerHTML = htmlContent;
 
-      // Replace __underline__ with <span>
-      htmlContent = htmlContent.replace(/__(.*?)__/g, `<span style="text-decoration: underline; text-decoration-thickness: ${state.underlineThickness}px;">$1</span>`);
+      function sanitizeDOM(node) {
+        for (let i = node.childNodes.length - 1; i >= 0; i--) {
+          const child = node.childNodes[i];
+          if (child.nodeType === Node.ELEMENT_NODE) {
+            const tagName = child.tagName.toLowerCase();
+            if (tagName === 'span') {
+              const styleAttr = child.getAttribute('style') || '';
+              // strip all attributes to avoid onload/onclick hacks
+              while (child.attributes.length > 0) {
+                child.removeAttribute(child.attributes[0].name);
+              }
+              const dummy = document.createElement('span');
+              dummy.style.cssText = styleAttr;
+              const allowed = ['color', 'font-size', 'font-weight', 'text-decoration', 'text-decoration-thickness', 'border-bottom', 'padding-bottom', 'display', 'float', 'text-align'];
+              allowed.forEach(prop => {
+                if (dummy.style[prop]) {
+                  child.style[prop] = dummy.style[prop];
+                }
+              });
+              sanitizeDOM(child);
+            } else if (tagName === 'br' || tagName === 'div' || tagName === 'p') {
+              while (child.attributes.length > 0) {
+                child.removeAttribute(child.attributes[0].name);
+              }
+              sanitizeDOM(child);
+            } else {
+              // Replace other non-permitted tags with text nodes (safely escapes them)
+              const textNode = document.createTextNode(child.outerHTML);
+              node.replaceChild(textNode, child);
+            }
+          }
+        }
+      }
 
-      paperOut.innerHTML = htmlContent;
+      sanitizeDOM(tempSanitize);
+
+      if (document.activeElement !== paperOut) {
+        paperOut.innerHTML = tempSanitize.innerHTML;
+      }
 
       paperOut.style.fontFamily = state.font;
       paperOut.style.fontSize = fontSize + 'px';
@@ -183,6 +223,17 @@ document.addEventListener('DOMContentLoaded', () => {
       marginLine.style.display = state.margin ? 'block' : 'none';
     }
 
+    // Helper to resolve CSS variables to actual colors for html2canvas support
+    function resolveColor(cssVarName) {
+      if (cssVarName && cssVarName.startsWith('var(')) {
+        const match = cssVarName.match(/var\(([^)]+)\)/);
+        if (match) {
+          return getComputedStyle(document.documentElement).getPropertyValue(match[1]).trim();
+        }
+      }
+      return cssVarName;
+    }
+
     // Apply Background colors and drawing lines patterns based on presets
     if (paperSheet) {
       let paperBg = 'var(--paper-bg-ruled)';
@@ -195,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lineColor = 'var(--paper-line-legal)';
       } else if (state.paperPreset === 'grid') {
         paperBg = 'var(--paper-bg-grid)';
+        marginColor = '';
         lineColor = 'var(--paper-line-grid)';
       } else if (state.paperPreset === 'vintage') {
         paperBg = 'var(--paper-bg-vintage)';
@@ -202,30 +254,39 @@ document.addEventListener('DOMContentLoaded', () => {
         lineColor = 'var(--paper-line-vintage)';
       } else if (state.paperPreset === 'blank') {
         paperBg = '#ffffff';
+        marginColor = '';
+        lineColor = '';
       }
 
-      paperSheet.style.backgroundColor = paperBg;
+      // Resolve variables to absolute hex/rgb colors so html2canvas renders them
+      const resolvedBg = resolveColor(paperBg);
+      const resolvedMargin = marginColor ? resolveColor(marginColor) : '';
+      const resolvedLine = lineColor ? resolveColor(lineColor) : '';
+
+      paperSheet.style.backgroundColor = resolvedBg;
       if (marginLine) {
-        marginLine.style.backgroundColor = marginColor;
+        marginLine.style.backgroundColor = resolvedMargin;
       }
 
       // Draw lines
-      if (state.ruled) {
+      if (state.ruled && resolvedLine) {
         if (state.paperPreset === 'grid') {
           // Grid/Graph lines drawing
           paperSheet.style.backgroundImage = `
-            linear-gradient(to right, ${lineColor} 1px, transparent 1px),
-            linear-gradient(to bottom, ${lineColor} 1px, transparent 1px)
+            linear-gradient(to right, ${resolvedLine} 1px, transparent 1px),
+            linear-gradient(to bottom, ${resolvedLine} 1px, transparent 1px)
           `;
           paperSheet.style.backgroundSize = `${lineHeight}px ${lineHeight}px`;
           paperSheet.style.backgroundPosition = '0 0';
+          paperSheet.style.backgroundRepeat = 'repeat';
         } else if (state.paperPreset === 'blank') {
           paperSheet.style.backgroundImage = 'none';
         } else {
-          // Horizontal Lined Ruled Drawing
-          paperSheet.style.backgroundImage = `repeating-linear-gradient(to bottom, transparent, transparent ${lineHeight - 1}px, ${lineColor} ${lineHeight}px)`;
+          // Horizontal Lined Ruled Drawing - using standard linear-gradient for html2canvas compatibility
+          paperSheet.style.backgroundImage = `linear-gradient(to bottom, transparent, transparent ${lineHeight - 1}px, ${resolvedLine} ${lineHeight - 1}px, ${resolvedLine} ${lineHeight}px)`;
           paperSheet.style.backgroundSize = '100% ' + lineHeight + 'px';
           paperSheet.style.backgroundPosition = '0 30px';
+          paperSheet.style.backgroundRepeat = 'repeat';
         }
       } else {
         paperSheet.style.backgroundImage = 'none';
@@ -288,6 +349,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Helper to check if selection is inside paper sheet
+  function isSelectionInSheet() {
+    const selection = window.getSelection();
+    return paperOut && !selection.isCollapsed && paperOut.contains(selection.anchorNode);
+  }
+
+  // Helper to wrap formatting styles selection-specifically on the sheet
+  function applyStyleToSelection(styleName, styleValue) {
+    const selection = window.getSelection();
+    if (selection.isCollapsed) return;
+
+    const range = selection.getRangeAt(0);
+    const span = document.createElement('span');
+    span.style[styleName] = styleValue;
+
+    try {
+      const contents = range.extractContents();
+      span.appendChild(contents);
+      range.insertNode(span);
+    } catch (err) {
+      console.error("Failed to wrap selection styling:", err);
+    }
+
+    paperOut.dispatchEvent(new Event('input')); // trigger sync
+  }
+
   // Wrap selected text in textarea
   function insertFormatting(prefix, suffix) {
     if (!txt) return;
@@ -310,11 +397,25 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (btnBold) {
-    btnBold.addEventListener('click', () => insertFormatting('**', '**'));
+    btnBold.addEventListener('click', () => {
+      if (isSelectionInSheet()) {
+        document.execCommand('bold');
+        paperOut.dispatchEvent(new Event('input'));
+      } else {
+        insertFormatting('**', '**');
+      }
+    });
   }
 
   if (btnUnderline) {
-    btnUnderline.addEventListener('click', () => insertFormatting('__', '__'));
+    btnUnderline.addEventListener('click', () => {
+      if (isSelectionInSheet()) {
+        document.execCommand('underline');
+        paperOut.dispatchEvent(new Event('input'));
+      } else {
+        insertFormatting('__', '__');
+      }
+    });
   }
 
   if (bwSlider) {
@@ -345,9 +446,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (sizeSlider) {
     sizeSlider.addEventListener('input', (e) => {
-      state.size = parseInt(e.target.value);
-      render();
-      saveState();
+      const newSize = parseInt(e.target.value);
+      if (isSelectionInSheet()) {
+        applyStyleToSelection('fontSize', newSize + 'px');
+      } else {
+        state.size = newSize;
+        render();
+        saveState();
+      }
     });
   }
 
@@ -393,11 +499,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (customInk) {
     customInk.addEventListener('input', (e) => {
-      state.ink = e.target.value;
-      // remove active classes on preset inks
-      presetInkButtons.forEach(btn => btn.classList.remove('active'));
-      render();
-      saveState();
+      const color = e.target.value;
+      if (isSelectionInSheet()) {
+        applyStyleToSelection('color', color);
+      } else {
+        state.ink = color;
+        // remove active classes on preset inks
+        presetInkButtons.forEach(btn => btn.classList.remove('active'));
+        render();
+        saveState();
+      }
     });
   }
 
@@ -419,14 +530,18 @@ document.addEventListener('DOMContentLoaded', () => {
   presetInkButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const ink = btn.getAttribute('data-ink');
-      state.ink = ink;
-      if (customInk) customInk.value = ink;
+      if (isSelectionInSheet()) {
+        applyStyleToSelection('color', ink);
+      } else {
+        state.ink = ink;
+        if (customInk) customInk.value = ink;
 
-      presetInkButtons.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+        presetInkButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
 
-      render();
-      saveState();
+        render();
+        saveState();
+      }
     });
   });
 
@@ -483,8 +598,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           try {
             await navigator.share({
-              title: 'Inkflow Note',
-              text: 'Here is my handwritten note!',
               files: [file]
             });
             return;
@@ -508,10 +621,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Clear workspace action (New Note)
   function clearWorkspace() {
     if (confirm('Are you sure you want to clear your notepad text to start a new note?')) {
-      state.text = '';
-      if (txt) txt.value = '';
+      const today = new Date();
+      const dateStr = `Date: ${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
+      state.text = `${dateStr}\n\n`;
+      if (txt) txt.value = state.text;
       render();
       saveState();
+      document.dispatchEvent(new CustomEvent('inkflow-clear'));
     }
   }
 
@@ -563,6 +679,199 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  // ── HTML to Markdown Parser ──────────────────────────────────
+  function htmlToMarkdown(html) {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    let lines = [];
+    let currentLine = '';
+
+    function traverse(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        currentLine += node.textContent;
+        return;
+      }
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const tagName = node.tagName.toLowerCase();
+        
+        if (tagName === 'br') {
+          lines.push(currentLine);
+          currentLine = '';
+          return;
+        }
+
+        let prefix = '';
+        let suffix = '';
+
+        // Match styled tags & spans
+        const isBold = (node.style.fontWeight && (parseInt(node.style.fontWeight) >= 600 || node.style.fontWeight === 'bold')) || tagName === 'b' || tagName === 'strong';
+        const isUnderline = node.style.borderBottom || node.style.textDecoration.includes('underline') || tagName === 'u';
+
+        if (isBold) { prefix += '**'; suffix = '**' + suffix; }
+        if (isUnderline) { prefix += '__'; suffix = '__' + suffix; }
+
+        // Match inline color and font-size wrappers
+        let styleStr = '';
+        const colorVal = node.style.color || (tagName === 'font' && node.getAttribute('color'));
+        if (colorVal) styleStr += `color: ${colorVal}; `;
+        const sizeVal = node.style.fontSize;
+        if (sizeVal) styleStr += `font-size: ${sizeVal}; `;
+
+        // Do not restore styling span for the floated Date header
+        const isDateFloat = tagName === 'span' && node.style.float === 'right' && /^Date\s*:/i.test(node.textContent);
+
+        if (styleStr && !isDateFloat) {
+          prefix = `<span style="${styleStr.trim()}">` + prefix;
+          suffix = suffix + `</span>`;
+        }
+
+        currentLine += prefix;
+
+        const isBlock = tagName === 'div' || tagName === 'p';
+        if (isBlock && currentLine !== '') {
+          lines.push(currentLine);
+          currentLine = '';
+        }
+
+        node.childNodes.forEach(child => traverse(child));
+        currentLine += suffix;
+
+        if (isBlock) {
+          lines.push(currentLine);
+          currentLine = '';
+        }
+      }
+    }
+
+    temp.childNodes.forEach(child => traverse(child));
+    if (currentLine !== '') {
+      lines.push(currentLine);
+    }
+
+    return lines
+      .map(line => line.replace(/\r/g, '').trimEnd())
+      .join('\n')
+      .replace(/\n\n+/g, '\n');
+  }
+
+  // ── Direct editing content sync ──────────────────────────────
+  if (paperOut) {
+    paperOut.addEventListener('input', () => {
+      const md = htmlToMarkdown(paperOut.innerHTML);
+      if (txt && txt.value !== md) {
+        txt.value = md;
+        state.text = md;
+        saveState();
+        updateStats();
+      }
+    });
+  }
+
+  // ── Floating Rich Text Formatting Toolbar ──────────────────────
+  const floatingToolbar = document.getElementById('floating-toolbar');
+  
+  if (floatingToolbar && paperOut) {
+    // Prevent toolbar click from clearing text selection in paperOut
+    floatingToolbar.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+    });
+
+    // Bold click
+    const floatBoldBtn = document.getElementById('float-bold');
+    if (floatBoldBtn) {
+      floatBoldBtn.addEventListener('click', () => {
+        document.execCommand('bold');
+        paperOut.dispatchEvent(new Event('input')); // trigger sync
+      });
+    }
+
+    // Underline click
+    const floatUnderlineBtn = document.getElementById('float-underline');
+    if (floatUnderlineBtn) {
+      floatUnderlineBtn.addEventListener('click', () => {
+        document.execCommand('underline');
+        paperOut.dispatchEvent(new Event('input')); // trigger sync
+      });
+    }
+
+    // Size increment/decrement selection-specifically
+    const floatSizeUp = document.getElementById('float-size-up');
+    const floatSizeDown = document.getElementById('float-size-down');
+
+    if (floatSizeUp) {
+      floatSizeUp.addEventListener('click', () => {
+        const selection = window.getSelection();
+        if (selection.isCollapsed) return;
+        const range = selection.getRangeAt(0);
+        const parent = range.commonAncestorContainer.parentElement;
+        const currentSize = parent ? parseInt(window.getComputedStyle(parent).fontSize) : parseInt(state.size);
+        const newSize = Math.min(80, currentSize + 2);
+        
+        applyStyleToSelection('fontSize', newSize + 'px');
+        
+        const floatSizeVal = document.getElementById('float-size-val');
+        if (floatSizeVal) floatSizeVal.textContent = newSize;
+      });
+    }
+
+    if (floatSizeDown) {
+      floatSizeDown.addEventListener('click', () => {
+        const selection = window.getSelection();
+        if (selection.isCollapsed) return;
+        const range = selection.getRangeAt(0);
+        const parent = range.commonAncestorContainer.parentElement;
+        const currentSize = parent ? parseInt(window.getComputedStyle(parent).fontSize) : parseInt(state.size);
+        const newSize = Math.max(12, currentSize - 2);
+        
+        applyStyleToSelection('fontSize', newSize + 'px');
+        
+        const floatSizeVal = document.getElementById('float-size-val');
+        if (floatSizeVal) floatSizeVal.textContent = newSize;
+      });
+    }
+
+    // Color selectors selection-specifically
+    const floatColorBtns = floatingToolbar.querySelectorAll('.float-color-btn');
+    floatColorBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const color = btn.getAttribute('data-color');
+        applyStyleToSelection('color', color);
+      });
+    });
+
+    // Detect selection change and position toolbar
+    document.addEventListener('selectionchange', () => {
+      const selection = window.getSelection();
+
+      if (selection.isCollapsed || !paperOut.contains(selection.anchorNode)) {
+        floatingToolbar.style.display = 'none';
+        return;
+      }
+
+      try {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        
+        floatingToolbar.style.display = 'flex';
+        
+        // Align center horizontally above selection
+        const leftPos = window.scrollX + rect.left + (rect.width / 2) - (floatingToolbar.offsetWidth / 2);
+        const topPos = window.scrollY + rect.top - floatingToolbar.offsetHeight - 8;
+        
+        floatingToolbar.style.left = Math.max(10, leftPos) + 'px';
+        floatingToolbar.style.top = topPos + 'px';
+
+        // Update the size indicator for the current selection
+        const parent = range.commonAncestorContainer.parentElement;
+        const currentSize = parent ? parseInt(window.getComputedStyle(parent).fontSize) : parseInt(state.size);
+        const floatSizeVal = document.getElementById('float-size-val');
+        if (floatSizeVal) floatSizeVal.textContent = currentSize;
+      } catch (err) {
+        floatingToolbar.style.display = 'none';
+      }
+    });
+  }
 
   // Initialize
   loadSavedState();

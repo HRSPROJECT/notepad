@@ -459,3 +459,66 @@
   filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
 }
 
+.stamp-overlay.selected {
+  outline-color: var(--accent-color);
+  outline-style: solid;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+/* Custom Keys Styles */
+.custom-keys-section {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+.custom-keys-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.ck-item {
+  transition: all 0.2s ease;
+}
+.ck-item:hover {
+  border-color: var(--accent-color) !important;
+}
+
+
+
+/* Floating formatting toolbar */
+.floating-toolbar {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background-color: var(--bg-glass) !important;
+  display: flex;
+}
+
+.floating-toolbar button:not(.float-color-btn) {
+  background-color: transparent !important;
+  border: none !important;
+  color: var(--text-primary) !important;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.2s ease;
+}
+
+.floating-toolbar button:hover {
+  background-color: var(--accent-light) !important;
+  color: var(--accent-color) !important;
+}
+
+.float-color-btn {
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+  transition: transform 0.15s ease !important;
+}
+
+.float-color-btn:hover {
+  transform: scale(1.2);
+  background-color: transparent !important;
+}
+
+
+
+

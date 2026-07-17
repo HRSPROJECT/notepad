@@ -166,7 +166,14 @@
             <img id="stamp-preview-thumb" class="stamp-thumb" style="display:none;" alt="Stamp preview">
           </div>
 
-          <div id="stamp-controls" class="stamp-controls" style="display:none;">
+          <!-- Template Actions (Add to Note, Delete permanently) -->
+          <div id="stamp-template-actions" style="display:none; flex-direction:column; gap:8px; margin-top:8px;">
+            <button id="stamp-add-btn" class="btn btn-primary" style="width: 100%; padding: 8px; font-size: 13px;"><i class="fa-solid fa-plus"></i> Add Stamp to Note</button>
+            <button id="stamp-delete-template-btn" class="btn btn-secondary" style="width: 100%; padding: 8px; font-size: 12px; color: #ef4444; border-color: rgba(239,68,68,0.2);"><i class="fa-solid fa-trash-can"></i> Remove Permanently</button>
+          </div>
+
+          <!-- Instance styling controls (active when stamp clicked on paper) -->
+          <div id="stamp-controls" class="stamp-controls" style="display:none; margin-top:10px;">
             <div style="display:flex; flex-direction:column; gap:4px;">
               <label style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Size <span id="stamp-size-val">120</span>px</label>
               <input type="range" id="stamp-size" class="range-slider" min="40" max="400" step="5" value="120">
@@ -177,9 +184,48 @@
             </div>
             <div style="display:flex; gap:8px; margin-top:4px;">
               <button id="stamp-rotate-btn" class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;"><i class="fa-solid fa-rotate-right"></i> Rotate</button>
-              <button id="stamp-remove-btn" class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px; color:#ef4444;"><i class="fa-solid fa-trash-can"></i> Remove</button>
+              <button id="stamp-remove-btn" class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px; color:#ef4444;"><i class="fa-solid fa-trash-can"></i> Remove from Note</button>
             </div>
             <p style="font-size:11px; color:var(--text-tertiary); margin-top:4px; text-align:center;"><i class="fa-solid fa-hand-pointer"></i> Drag stamp on paper to reposition</p>
+          </div>
+        </div>
+
+        <!-- Custom Keys Section -->
+        <div class="form-group custom-keys-section">
+          <label class="custom-keys-label"><i class="fa-solid fa-keyboard"></i> Custom Keys Replacement</label>
+          <div id="custom-keys-list" class="custom-keys-list" style="margin-bottom: 8px; max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
+            <!-- Rendered dynamically -->
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <input type="text" id="ck-trigger" placeholder="Type *..." style="flex: 1; padding: 6px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" title="Trigger sequence">
+            <input type="text" id="ck-replacement" placeholder="Becomes x..." style="flex: 1; padding: 6px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" title="Replacement text">
+            <button id="btn-add-ck" class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" title="Add custom key"><i class="fa-solid fa-plus"></i></button>
+          </div>
+          <p style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px;">Automatically replaces characters as you type in the notepad.</p>
+        </div>
+
+        <!-- AI Transcriber Section -->
+        <div class="form-group ai-section" style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px;">
+          <label class="ai-label" style="display: flex; align-items: center; gap: 8px; font-weight: 600;"><i class="fa-solid fa-robot"></i> AI Medicine Transcriber</label>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Groq API Key</label>
+              <input type="password" id="ai-api-key" placeholder="gsk_..." style="padding: 8px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" title="Enter Groq API Key">
+            </div>
+            <input type="hidden" id="ai-model" value="meta-llama/llama-4-scout-17b-16e-instruct">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Upload Medicine Image</label>
+              <div id="ai-drop-zone" class="stamp-drop-zone" style="border-style: dashed; padding: 12px; height: auto; min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer;">
+                <input type="file" id="ai-image-input" accept="image/*" style="display: none;">
+                <div id="ai-image-placeholder" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-camera" style="font-size: 18px; color: var(--text-tertiary);"></i>
+                  <span style="font-size: 12px; color: var(--text-secondary);">Click or drag image</span>
+                </div>
+                <img id="ai-image-preview" style="display: none; max-width: 100%; max-height: 80px; border-radius: var(--radius-sm);" alt="Prescription preview">
+              </div>
+            </div>
+            <button id="btn-process-ai" class="btn btn-primary" style="width: 100%; padding: 10px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Format with Groq AI</button>
+            <div id="ai-loading" style="display: none; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: var(--text-secondary); margin-top: 4px;"><i class="fa-solid fa-spinner fa-spin"></i> Processing image...</div>
           </div>
         </div>
 
@@ -202,9 +248,7 @@
       <main class="paper-workspace">
         <div id="paper-sheet" class="paper-sheet">
           <div id="margin-line" class="paper-margin-line"></div>
-          <div id="paper-out" class="paper-content-out"></div>
-          <!-- Stamp overlay: draggable, positioned absolutely inside the paper -->
-          <img id="stamp-img" class="stamp-overlay" style="display:none;" alt="Stamp" draggable="false">
+          <div id="paper-out" class="paper-content-out" contenteditable="true" spellcheck="false"></div>
         </div>
       </main>
 
@@ -243,9 +287,32 @@
     </div>
   </footer>
 
+  <!-- Floating Rich Text Toolbar -->
+  <div id="floating-toolbar" class="floating-toolbar" style="display: none; position: absolute; z-index: 1000; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 6px; gap: 6px; align-items: center;">
+    <button id="float-bold" class="btn btn-secondary" style="padding: 6px 10px; font-size: 13px;" title="Bold"><i class="fa-solid fa-bold"></i></button>
+    <button id="float-underline" class="btn btn-secondary" style="padding: 6px 10px; font-size: 13px;" title="Underline"><i class="fa-solid fa-underline"></i></button>
+    <div style="width: 1px; height: 18px; background-color: var(--border-color);"></div>
+    
+    <!-- Color picker circles -->
+    <div style="display: flex; gap: 6px; align-items: center;">
+      <button class="float-color-btn" data-color="#1a2a6c" style="width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #fff; background-color: #1a2a6c; cursor: pointer; padding: 0; display: block;" title="Gel Blue"></button>
+      <button class="float-color-btn" data-color="#000000" style="width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #fff; background-color: #000000; cursor: pointer; padding: 0; display: block;" title="Carbon Black"></button>
+      <button class="float-color-btn" data-color="#b91c1c" style="width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #fff; background-color: #b91c1c; cursor: pointer; padding: 0; display: block;" title="Red Ink"></button>
+      <button class="float-color-btn" data-color="#065f46" style="width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #fff; background-color: #065f46; cursor: pointer; padding: 0; display: block;" title="Forest Green"></button>
+    </div>
+    <div style="width: 1px; height: 18px; background-color: var(--border-color);"></div>
+
+    <!-- Size picker -->
+    <button id="float-size-down" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" title="Decrease Font Size"><i class="fa-solid fa-minus"></i></button>
+    <span id="float-size-val" style="font-size: 11px; font-weight: 700; min-width: 18px; text-align: center;">28</span>
+    <button id="float-size-up" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" title="Increase Font Size"><i class="fa-solid fa-plus"></i></button>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="js/global.js"></script>
   <script src="js/editor.js"></script>
   <script src="js/stamp.js"></script>
+  <script src="js/custom_keys.js"></script>
+  <script src="js/ai_transcriber.js"></script>
 </body>
 </html>
