@@ -49,7 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
     boldWeight: 700,
     underlineThickness: 2,
     ink: '#1a2a6c', // Gel Blue default
-    paperPreset: 'ruled' // classic lined default
+    paperPreset: 'ruled', // classic lined default
+    extraPages: [] // array of { text: '' } for additional pages
   };
 
   // Load state from local storage if exists
@@ -64,11 +65,41 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Process URL search query parameters (e.g. from Font Gallery)
+    // Process URL search query parameters
     const urlParams = new URLSearchParams(window.location.search);
+
+    // ?font= param (from Font Gallery)
     const fontParam = urlParams.get('font');
     if (fontParam) {
       state.font = decodeURIComponent(fontParam);
+    }
+
+    // ?note= param (from Saved Notes library — load a specific saved note)
+    const noteId = urlParams.get('note');
+    if (noteId) {
+      try {
+        const allNotes = JSON.parse(localStorage.getItem('inkflow_saved_notes') || '[]');
+        const savedNote = allNotes.find(n => n.id === noteId);
+        if (savedNote) {
+          // Restore every field that was saved
+          if (savedNote.text !== undefined)               state.text = savedNote.text;
+          if (savedNote.font !== undefined)               state.font = savedNote.font;
+          if (savedNote.size !== undefined)               state.size = savedNote.size;
+          if (savedNote.lineHeight !== undefined)         state.lineHeight = savedNote.lineHeight;
+          if (savedNote.letterSpacing !== undefined)      state.letterSpacing = savedNote.letterSpacing;
+          if (savedNote.wordSpacing !== undefined)        state.wordSpacing = savedNote.wordSpacing;
+          if (savedNote.ink !== undefined)                state.ink = savedNote.ink;
+          if (savedNote.paperPreset !== undefined)        state.paperPreset = savedNote.paperPreset;
+          if (savedNote.ruled !== undefined)              state.ruled = savedNote.ruled;
+          if (savedNote.margin !== undefined)             state.margin = savedNote.margin;
+          if (savedNote.boldWeight !== undefined)         state.boldWeight = savedNote.boldWeight;
+          if (savedNote.underlineThickness !== undefined) state.underlineThickness = savedNote.underlineThickness;
+          // Strip the ?note= param from the URL so refreshing doesn't re-load old state
+          history.replaceState(null, '', window.location.pathname);
+        }
+      } catch (e) {
+        console.error('Error restoring saved note:', e);
+      }
     }
   }
 
@@ -86,7 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
       boldWeight: state.boldWeight,
       underlineThickness: state.underlineThickness,
       ink: state.ink,
-      paperPreset: state.paperPreset
+      paperPreset: state.paperPreset,
+      extraPages: state.extraPages
     }));
   }
 
@@ -308,6 +340,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update stats counters
     updateStats();
+
+    // Sync styling to all extra pages
+    syncExtraPagesStyle();
   }
 
   function updateStats() {
@@ -316,6 +351,263 @@ document.addEventListener('DOMContentLoaded', () => {
       const words = state.text.trim().split(/\s+/).filter(w => w.length > 0);
       wordCount.textContent = words.length;
     }
+  }
+
+  // ── Multi-Page System ────────────────────────────────────────────
+  const paperWorkspace = document.querySelector('.paper-workspace');
+
+  // Apply paper background/style to any sheet element
+  function applySheetStyle(sheet, marginEl) {
+    const lineHeight = parseInt(state.lineHeight);
+
+    function resolveColor(cssVarName) {
+      if (cssVarName && cssVarName.startsWith('var(')) {
+        const match = cssVarName.match(/var\(([^)]+)\)/);
+        if (match) return getComputedStyle(document.documentElement).getPropertyValue(match[1]).trim();
+      }
+      return cssVarName;
+    }
+
+    let paperBg = 'var(--paper-bg-ruled)', marginColor = 'var(--paper-margin-ruled)', lineColor = 'var(--paper-line-ruled)';
+    if (state.paperPreset === 'legal')   { paperBg = 'var(--paper-bg-legal)';   marginColor = 'var(--paper-margin-legal)';   lineColor = 'var(--paper-line-legal)'; }
+    if (state.paperPreset === 'grid')    { paperBg = 'var(--paper-bg-grid)';    marginColor = '';                            lineColor = 'var(--paper-line-grid)'; }
+    if (state.paperPreset === 'vintage') { paperBg = 'var(--paper-bg-vintage)'; marginColor = 'var(--paper-margin-vintage)'; lineColor = 'var(--paper-line-vintage)'; }
+    if (state.paperPreset === 'blank')   { paperBg = '#ffffff';                 marginColor = '';                            lineColor = ''; }
+
+    const resolvedBg     = resolveColor(paperBg);
+    const resolvedMargin = marginColor ? resolveColor(marginColor) : '';
+    const resolvedLine   = lineColor   ? resolveColor(lineColor)   : '';
+
+    sheet.style.backgroundColor = resolvedBg;
+    sheet.style.paddingLeft = state.margin ? '64px' : '40px';
+
+    if (marginEl) {
+      marginEl.style.display = state.margin ? 'block' : 'none';
+      marginEl.style.backgroundColor = resolvedMargin;
+    }
+
+    if (state.ruled && resolvedLine) {
+      if (state.paperPreset === 'grid') {
+        sheet.style.backgroundImage = `linear-gradient(to right, ${resolvedLine} 1px, transparent 1px), linear-gradient(to bottom, ${resolvedLine} 1px, transparent 1px)`;
+        sheet.style.backgroundSize = `${lineHeight}px ${lineHeight}px`;
+        sheet.style.backgroundPosition = '0 0';
+      } else if (state.paperPreset !== 'blank') {
+        sheet.style.backgroundImage = `linear-gradient(to bottom, transparent, transparent ${lineHeight - 1}px, ${resolvedLine} ${lineHeight - 1}px, ${resolvedLine} ${lineHeight}px)`;
+        sheet.style.backgroundSize = '100% ' + lineHeight + 'px';
+        sheet.style.backgroundPosition = '0 30px';
+      } else {
+        sheet.style.backgroundImage = 'none';
+      }
+    } else {
+      sheet.style.backgroundImage = 'none';
+    }
+  }
+
+  // Sync styles to all extra pages (called from render)
+  function syncExtraPagesStyle() {
+    document.querySelectorAll('.paper-sheet.extra-page').forEach(sheet => {
+      const marginEl = sheet.querySelector('.paper-margin-line');
+      const contentEl = sheet.querySelector('.paper-content-out');
+      applySheetStyle(sheet, marginEl);
+      if (contentEl) {
+        contentEl.style.fontFamily     = state.font;
+        contentEl.style.fontSize       = state.size + 'px';
+        contentEl.style.lineHeight     = state.lineHeight + 'px';
+        contentEl.style.letterSpacing  = state.letterSpacing + 'px';
+        contentEl.style.wordSpacing    = state.wordSpacing + 'px';
+        contentEl.style.color          = state.ink;
+      }
+    });
+  }
+
+  // Create and append a new page sheet
+  function addNewPage() {
+    const pageIndex = state.extraPages.length; // 0-based index in extraPages
+    const pageNum   = pageIndex + 2;           // Display number (page 1 is the main)
+
+    const pageDat = { text: '' };
+    state.extraPages.push(pageDat);
+
+    const pageWrap = document.createElement('div');
+    pageWrap.className = 'page-block extra-page-block';
+    pageWrap.setAttribute('data-page-index', pageIndex);
+
+    pageWrap.innerHTML = `
+      <div class="page-num-label">
+        <span><i class="fa-regular fa-file"></i> Page ${pageNum}</span>
+        <button class="page-remove-btn" title="Remove this page"><i class="fa-solid fa-xmark"></i> Remove Page</button>
+      </div>
+      <div class="paper-sheet extra-page">
+        <div class="paper-margin-line"></div>
+        <div class="paper-content-out" contenteditable="true" spellcheck="false"></div>
+      </div>
+    `;
+
+    // Insert before the add-page strip (or append if strip doesn't exist)
+    const addStrip = document.getElementById('add-page-strip');
+    if (addStrip) {
+      paperWorkspace.insertBefore(pageWrap, addStrip);
+    } else {
+      paperWorkspace.appendChild(pageWrap);
+    }
+
+    const sheet      = pageWrap.querySelector('.paper-sheet');
+    const marginEl   = pageWrap.querySelector('.paper-margin-line');
+    const contentOut = pageWrap.querySelector('.paper-content-out');
+
+    // Apply current styling
+    applySheetStyle(sheet, marginEl);
+    contentOut.style.fontFamily    = state.font;
+    contentOut.style.fontSize      = state.size + 'px';
+    contentOut.style.lineHeight    = state.lineHeight + 'px';
+    contentOut.style.letterSpacing = state.letterSpacing + 'px';
+    contentOut.style.wordSpacing   = state.wordSpacing + 'px';
+    contentOut.style.color         = state.ink;
+
+    // Sync content changes back to state
+    contentOut.addEventListener('input', () => {
+      pageDat.text = contentOut.innerText;
+      saveState();
+    });
+
+    // Remove page button
+    pageWrap.querySelector('.page-remove-btn').addEventListener('click', () => {
+      if (confirm(`Remove Page ${pageNum}? All content on this page will be lost.`)) {
+        state.extraPages.splice(pageIndex, 1);
+        pageWrap.remove();
+        // Re-number remaining pages
+        renumberPages();
+        saveState();
+      }
+    });
+
+    // Scroll into view
+    setTimeout(() => sheet.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+
+    saveState();
+  }
+
+  // Re-label page numbers after a removal
+  function renumberPages() {
+    const blocks = document.querySelectorAll('.extra-page-block');
+    blocks.forEach((block, i) => {
+      const label = block.querySelector('.page-num-label span');
+      if (label) label.innerHTML = `<i class="fa-regular fa-file"></i> Page ${i + 2}`;
+      block.setAttribute('data-page-index', i);
+    });
+  }
+
+  // Restore extra pages from saved state on load
+  function restoreExtraPages() {
+    if (!state.extraPages || state.extraPages.length === 0) return;
+    // Save and restore to avoid mutation issues
+    const pages = state.extraPages.slice();
+    state.extraPages = [];
+    pages.forEach(pageDat => {
+      // addNewPage pushes to state.extraPages, so reset then re-push
+      addNewPage();
+      // Set the restored text into the DOM and state
+      const lastBlock = document.querySelector('.extra-page-block:last-of-type');
+      if (lastBlock) {
+        const contentOut = lastBlock.querySelector('.paper-content-out');
+        if (contentOut) {
+          contentOut.innerText = pageDat.text || '';
+          state.extraPages[state.extraPages.length - 1].text = pageDat.text || '';
+        }
+      }
+    });
+  }
+
+  // Initialise the "Add New Page" strip at the bottom of the workspace
+  function initAddPageStrip() {
+    if (!paperWorkspace) return;
+    const strip = document.createElement('div');
+    strip.id = 'add-page-strip';
+    strip.className = 'add-page-strip';
+    strip.innerHTML = `<button id="btn-add-page" class="add-page-btn"><i class="fa-solid fa-plus"></i> Add New Page</button>`;
+    paperWorkspace.appendChild(strip);
+    strip.querySelector('#btn-add-page').addEventListener('click', addNewPage);
+  }
+
+  // Insert a new page immediately after a specific block (null = after page 1).
+  // Used by the slicer and snapshot restore.
+  function insertPageAfterBlock(afterBlock, initialText) {
+    const pageDat = { text: initialText || '' };
+
+    // Determine insertion index in state.extraPages
+    let insertAtIdx = 0;
+    if (afterBlock) {
+      const extraBlocks = [...document.querySelectorAll('.extra-page-block')];
+      const idx = extraBlocks.indexOf(afterBlock);
+      insertAtIdx = (idx >= 0) ? idx + 1 : state.extraPages.length;
+    }
+    state.extraPages.splice(insertAtIdx, 0, pageDat);
+
+    // Build DOM block
+    const pageWrap = document.createElement('div');
+    pageWrap.className = 'page-block extra-page-block';
+    pageWrap.innerHTML = `
+      <div class="page-num-label">
+        <span><i class="fa-regular fa-file"></i> Page</span>
+        <button class="page-remove-btn" title="Remove this page"><i class="fa-solid fa-xmark"></i> Remove Page</button>
+      </div>
+      <div class="paper-sheet extra-page">
+        <div class="paper-margin-line"></div>
+        <div class="paper-content-out" contenteditable="true" spellcheck="false"></div>
+      </div>
+    `;
+
+    // Determine DOM insertion point
+    const addStrip = document.getElementById('add-page-strip');
+    let insertBeforeNode;
+
+    if (!afterBlock) {
+      // After page 1 — before the first existing extra block (if any)
+      insertBeforeNode = document.querySelector('.extra-page-block') || addStrip;
+    } else {
+      insertBeforeNode = afterBlock.nextSibling || addStrip;
+    }
+
+    if (insertBeforeNode) {
+      paperWorkspace.insertBefore(pageWrap, insertBeforeNode);
+    } else {
+      paperWorkspace.appendChild(pageWrap);
+    }
+
+    const contentOut = pageWrap.querySelector('.paper-content-out');
+    const sheet      = pageWrap.querySelector('.paper-sheet');
+    const marginEl   = pageWrap.querySelector('.paper-margin-line');
+
+    contentOut.innerText = initialText || '';
+
+    // Apply current styling
+    applySheetStyle(sheet, marginEl);
+    contentOut.style.fontFamily    = state.font;
+    contentOut.style.fontSize      = state.size + 'px';
+    contentOut.style.lineHeight    = state.lineHeight + 'px';
+    contentOut.style.letterSpacing = state.letterSpacing + 'px';
+    contentOut.style.wordSpacing   = state.wordSpacing + 'px';
+    contentOut.style.color         = state.ink;
+
+    // Wire input sync
+    contentOut.addEventListener('input', () => {
+      pageDat.text = contentOut.innerText;
+      saveState();
+    });
+
+    // Wire remove button
+    pageWrap.querySelector('.page-remove-btn').addEventListener('click', () => {
+      if (confirm('Remove this page? All content will be lost.')) {
+        const idx = state.extraPages.indexOf(pageDat);
+        if (idx !== -1) state.extraPages.splice(idx, 1);
+        pageWrap.remove();
+        renumberPages();
+        saveState();
+      }
+    });
+
+    renumberPages();
+    return pageWrap;
   }
 
   // Attach event handlers
@@ -550,34 +842,149 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Download Image Action
-  async function downloadImage() {
-    if (typeof html2canvas === 'undefined') {
-      alert("Error: html2canvas library is not loaded.");
-      return;
-    }
+  // ── Page Picker Modal (shared by download & share) ────────────
+  // Returns a Promise that resolves with an array of selected page sheets,
+  // or null if user cancelled.
+  function openPagePickerModal(actionLabel) {
+    return new Promise((resolve) => {
+      // Build the list of all pages
+      const allPages = [];
+      // Page 1 — main sheet
+      allPages.push({ label: 'Page 1', sheet: paperSheet });
+      // Extra pages
+      document.querySelectorAll('.extra-page-block').forEach((block, i) => {
+        const sheet = block.querySelector('.paper-sheet');
+        if (sheet) allPages.push({ label: `Page ${i + 2}`, sheet });
+      });
 
-    // Briefly hide the stamp controls if they are somehow visible during export
+      // If only one page, skip the modal
+      if (allPages.length === 1) {
+        resolve([allPages[0].sheet]);
+        return;
+      }
+
+      // Build modal HTML
+      const overlay = document.createElement('div');
+      overlay.className = 'note-modal-overlay';
+      overlay.innerHTML = `
+        <div class="note-modal" style="max-width: 480px;">
+          <h3><i class="fa-solid fa-images"></i> Select Pages to ${actionLabel}</h3>
+          <p>Your note has <strong>${allPages.length} pages</strong>. Choose which pages to ${actionLabel.toLowerCase()} — each will be a separate image.</p>
+          <div class="page-picker-list" style="display:flex; flex-direction:column; gap:10px; margin:16px 0 20px;">
+            ${allPages.map((p, i) => `
+              <label class="page-picker-item" style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:var(--radius-md); border:1px solid var(--border-color); cursor:pointer; transition:border-color 0.2s, background-color 0.2s; user-select:none;" data-idx="${i}">
+                <input type="checkbox" value="${i}" checked style="width:16px;height:16px;accent-color:var(--accent-color);cursor:pointer;">
+                <i class="fa-regular fa-file" style="color:var(--accent-color); font-size:16px;"></i>
+                <span style="font-weight:600; font-size:14px;">${p.label}</span>
+                <span style="margin-left:auto; font-size:11px; color:var(--text-tertiary); font-weight:500;">will be shared as image</span>
+              </label>
+            `).join('')}
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button id="pp-select-all" class="btn btn-secondary" style="font-size:12px; padding:8px 14px;">Select All</button>
+            <div style="flex:1;"></div>
+            <button id="pp-cancel" class="btn btn-secondary" style="flex:1; padding:12px;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+            <button id="pp-confirm" class="btn btn-primary" style="flex:1; padding:12px;"><i class="fa-solid fa-check"></i> ${actionLabel}</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+      requestAnimationFrame(() => overlay.classList.add('open'));
+
+      // Style checked items
+      function refreshItemStyles() {
+        overlay.querySelectorAll('.page-picker-item').forEach(item => {
+          const cb = item.querySelector('input[type=checkbox]');
+          item.style.borderColor = cb.checked ? 'var(--accent-color)' : 'var(--border-color)';
+          item.style.backgroundColor = cb.checked ? 'var(--accent-light)' : '';
+        });
+      }
+      refreshItemStyles();
+
+      // Clicking the label toggles checkbox
+      overlay.querySelectorAll('.page-picker-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          if (e.target.tagName === 'INPUT') return; // already handled
+          const cb = item.querySelector('input[type=checkbox]');
+          cb.checked = !cb.checked;
+          refreshItemStyles();
+        });
+        item.querySelector('input').addEventListener('change', refreshItemStyles);
+      });
+
+      // Select All toggle
+      const ppSelectAll = overlay.querySelector('#pp-select-all');
+      let allSelected = true;
+      ppSelectAll.addEventListener('click', () => {
+        allSelected = !allSelected;
+        overlay.querySelectorAll('.page-picker-item input').forEach(cb => cb.checked = allSelected);
+        ppSelectAll.textContent = allSelected ? 'Select All' : 'Deselect All';
+        refreshItemStyles();
+      });
+
+      function closeModal(result) {
+        overlay.classList.remove('open');
+        setTimeout(() => overlay.remove(), 280);
+        resolve(result);
+      }
+
+      overlay.querySelector('#pp-cancel').addEventListener('click', () => closeModal(null));
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(null); });
+
+      overlay.querySelector('#pp-confirm').addEventListener('click', () => {
+        const checked = [...overlay.querySelectorAll('.page-picker-item input:checked')];
+        if (checked.length === 0) {
+          alert('Please select at least one page.');
+          return;
+        }
+        const selectedSheets = checked.map(cb => allPages[parseInt(cb.value)].sheet);
+        closeModal(selectedSheets);
+      });
+    });
+  }
+
+  // ── Capture a single sheet element to a canvas ─────────────────
+  async function captureSheet(sheet) {
     const stampControls = document.getElementById('stamp-controls');
     const wasStampVisible = stampControls && stampControls.style.display !== 'none';
     if (wasStampVisible) stampControls.style.display = 'none';
-
     try {
-      const canvas = await html2canvas(paperSheet, {
-        scale: 2, // High resolution
-        useCORS: true,
-        backgroundColor: null
-      });
-      const dataUrl = canvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = 'Inkflow_Note.png';
-      a.click();
-    } catch (e) {
-      console.error("Failed to generate image", e);
-      alert("Failed to generate image.");
+      return await html2canvas(sheet, { scale: 2, useCORS: true, backgroundColor: null });
     } finally {
       if (wasStampVisible) stampControls.style.display = 'block';
+    }
+  }
+
+  // Download Image Action (multi-page aware)
+  async function downloadImage() {
+    if (typeof html2canvas === 'undefined') {
+      alert('Error: html2canvas library is not loaded.');
+      return;
+    }
+
+    const selectedSheets = await openPagePickerModal('Download');
+    if (!selectedSheets) return; // user cancelled
+
+    showToast(`Downloading ${selectedSheets.length} page${selectedSheets.length > 1 ? 's' : ''}...`);
+
+    for (let i = 0; i < selectedSheets.length; i++) {
+      try {
+        const canvas = await captureSheet(selectedSheets[i]);
+        const dataUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        // Name the file by page if multiple
+        a.download = selectedSheets.length > 1
+          ? `Inkflow_Note_Page${i + 1}.png`
+          : 'Inkflow_Note.png';
+        a.click();
+        // Small delay between sequential downloads
+        if (i < selectedSheets.length - 1) await new Promise(r => setTimeout(r, 400));
+      } catch (e) {
+        console.error(`Failed to generate image for page ${i + 1}`, e);
+        alert(`Failed to generate image for page ${i + 1}.`);
+      }
     }
   }
 
@@ -585,37 +992,60 @@ document.addEventListener('DOMContentLoaded', () => {
     btnDownload.addEventListener('click', downloadImage);
   }
 
-  // Share Note Action
+  // Share Note Action (multi-page aware)
   async function shareNote() {
     if (typeof html2canvas === 'undefined') {
-      alert("Error: html2canvas library is not loaded.");
+      alert('Error: html2canvas library is not loaded.');
       return;
     }
 
+    const selectedSheets = await openPagePickerModal('Share');
+    if (!selectedSheets) return; // user cancelled
+
+    showToast('Preparing images to share...');
+
     try {
-      const canvas = await html2canvas(paperSheet, { scale: 2, useCORS: true, backgroundColor: null });
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
+      // Capture all selected pages into File objects
+      const files = [];
+      for (let i = 0; i < selectedSheets.length; i++) {
+        const canvas = await captureSheet(selectedSheets[i]);
+        const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+        if (!blob) continue;
+        const fileName = selectedSheets.length > 1
+          ? `Inkflow_Note_Page${i + 1}.png`
+          : 'Inkflow_Note.png';
+        files.push(new File([blob], fileName, { type: 'image/png' }));
+      }
 
-        const file = new File([blob], 'Inkflow_Note.png', { type: 'image/png' });
+      if (files.length === 0) {
+        alert('Could not prepare any images.');
+        return;
+      }
 
-        // Try using Web Share API if supported
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file]
-            });
-            return;
-          } catch (err) {
-            console.log('Share API failed or user cancelled', err);
-          }
-        } else {
-           alert("Your browser does not support native file sharing. Use the Download Image option instead.");
+      // Try Web Share API with files
+      if (navigator.canShare && navigator.canShare({ files })) {
+        try {
+          await navigator.share({ files });
+          return;
+        } catch (err) {
+          console.log('Share API failed or user cancelled', err);
         }
-      }, 'image/png');
+      } else {
+        // Fallback: auto-download all files
+        alert(`Your browser doesn't support native sharing.\nDownloading ${files.length} image${files.length > 1 ? 's' : ''} instead.`);
+        for (const file of files) {
+          const url = URL.createObjectURL(file);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = file.name;
+          a.click();
+          URL.revokeObjectURL(url);
+          await new Promise(r => setTimeout(r, 400));
+        }
+      }
     } catch (e) {
-      console.error("Failed to share image", e);
-      alert("Failed to share image.");
+      console.error('Failed to share image', e);
+      alert('Failed to share image.');
     }
   }
 
@@ -630,6 +1060,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const dateStr = `Date: ${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
       state.text = `${dateStr}\n\n`;
       if (txt) txt.value = state.text;
+      // Remove all extra pages
+      state.extraPages = [];
+      document.querySelectorAll('.extra-page-block').forEach(el => el.remove());
       render();
       saveState();
       document.dispatchEvent(new CustomEvent('inkflow-clear'));
@@ -638,6 +1071,119 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnClear) {
     btnClear.addEventListener('click', clearWorkspace);
+  }
+
+  // Sidebar Add New Page button
+  const btnAddPageSidebar = document.getElementById('btn-add-page-sidebar');
+  if (btnAddPageSidebar) {
+    btnAddPageSidebar.addEventListener('click', addNewPage);
+  }
+
+  // ── Save Note to Library ──────────────────────────────────────
+  const NOTES_KEY = 'inkflow_saved_notes';
+
+  function saveNoteToLibrary(title) {
+    const allNotes = (() => {
+      try { return JSON.parse(localStorage.getItem(NOTES_KEY) || '[]'); }
+      catch (e) { return []; }
+    })();
+
+    const note = {
+      id: 'note-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+      title: title.trim(),
+      text: state.text,
+      font: state.font,
+      size: state.size,
+      lineHeight: state.lineHeight,
+      letterSpacing: state.letterSpacing,
+      wordSpacing: state.wordSpacing,
+      ink: state.ink,
+      paperPreset: state.paperPreset,
+      ruled: state.ruled,
+      margin: state.margin,
+      boldWeight: state.boldWeight,
+      underlineThickness: state.underlineThickness,
+      savedAt: new Date().toISOString()
+    };
+
+    allNotes.unshift(note); // Newest first
+    try {
+      localStorage.setItem(NOTES_KEY, JSON.stringify(allNotes));
+      showToast('Note saved to library! <a href="notes.html" style="color:var(--accent-color);text-decoration:underline;margin-left:6px;">View Notes →</a>');
+    } catch (e) {
+      showToast('Failed to save note (storage full?)', true);
+    }
+  }
+
+  // ── Toast Helper ──────────────────────────────────────────────
+  function showToast(msg, isError = false) {
+    let toast = document.getElementById('ink-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'ink-toast';
+      toast.className = 'ink-toast';
+      document.body.appendChild(toast);
+    }
+    toast.className = 'ink-toast' + (isError ? ' error' : '');
+    toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i> ${msg}`;
+    toast.classList.add('show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
+  // ── Save Note Modal wiring ─────────────────────────────────────
+  const btnSaveNote    = document.getElementById('btn-save-note');
+  const saveNoteModal  = document.getElementById('save-note-modal');
+  const saveNoteTitle  = document.getElementById('save-note-title');
+  const saveNoteConfirm = document.getElementById('save-note-confirm');
+  const saveNoteCancel  = document.getElementById('save-note-cancel');
+
+  function openSaveModal() {
+    if (!saveNoteModal) return;
+    // Pre-fill with the first line of the text as a suggested title
+    const firstLine = state.text.split('\n')[0].replace(/[*_]+/g, '').trim();
+    if (saveNoteTitle) {
+      saveNoteTitle.value = firstLine.substring(0, 60);
+    }
+    saveNoteModal.classList.add('open');
+    setTimeout(() => { if (saveNoteTitle) saveNoteTitle.focus(); }, 120);
+  }
+
+  function closeSaveModal() {
+    if (saveNoteModal) saveNoteModal.classList.remove('open');
+  }
+
+  if (btnSaveNote) btnSaveNote.addEventListener('click', openSaveModal);
+
+  if (saveNoteConfirm) {
+    saveNoteConfirm.addEventListener('click', () => {
+      const title = saveNoteTitle ? saveNoteTitle.value.trim() : '';
+      if (!title) {
+        saveNoteTitle && saveNoteTitle.focus();
+        saveNoteTitle && (saveNoteTitle.style.borderColor = '#ef4444');
+        setTimeout(() => { if (saveNoteTitle) saveNoteTitle.style.borderColor = ''; }, 1500);
+        return;
+      }
+      saveNoteToLibrary(title);
+      closeSaveModal();
+    });
+  }
+
+  if (saveNoteCancel) saveNoteCancel.addEventListener('click', closeSaveModal);
+
+  // Close modal on overlay click
+  if (saveNoteModal) {
+    saveNoteModal.addEventListener('click', (e) => {
+      if (e.target === saveNoteModal) closeSaveModal();
+    });
+  }
+
+  // Enter key to confirm inside modal
+  if (saveNoteTitle) {
+    saveNoteTitle.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); saveNoteConfirm && saveNoteConfirm.click(); }
+      if (e.key === 'Escape') closeSaveModal();
+    });
   }
 
   // Print Action
@@ -653,7 +1199,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const isCtrl = e.ctrlKey || e.metaKey;
 
     if (isCtrl) {
-      if (e.altKey) {
+      if (e.shiftKey && !e.altKey) {
+        // Ctrl + Shift + S : Save Note to Library
+        if (e.key.toLowerCase() === 's') {
+          e.preventDefault();
+          openSaveModal();
+        }
+      }
+      else if (e.altKey) {
         // Ctrl + Alt + S : Share Note
         if (e.key.toLowerCase() === 's') {
           e.preventDefault();
@@ -894,5 +1447,21 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize
   loadSavedState();
   updateControlsUI();
+  initAddPageStrip();
+  restoreExtraPages();
   render();
+
+  // ── Expose Editor API for external modules (slicer.js, etc.) ──
+  window.inkflow = {
+    getState:            () => state,
+    render,
+    saveState,
+    insertPageAfterBlock,
+    renumberPages,
+    syncExtraPagesStyle,
+    getPaperWorkspace:   () => paperWorkspace,
+    getPaperSheet:       () => paperSheet,
+    getPaperOut:         () => paperOut,
+    getTxt:              () => txt,
+  };
 });

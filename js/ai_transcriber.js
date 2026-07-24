@@ -1,6 +1,6 @@
 /**
- * Inkflow Groq AI Transcriber
- * Handles: direct base64 image capture, Groq API call, gpt-oss-120b completions, and editor updates.
+ * Inkflow Gemini/Gemma AI Transcriber
+ * Handles: direct base64 image capture, API call with gemma-4-31b-it model, and editor updates.
  */
 document.addEventListener('DOMContentLoaded', () => {
   const apiKeyInput    = document.getElementById('ai-api-key');
@@ -15,14 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!dropZone || !processBtn) return;
 
-  const API_KEY_STORAGE   = 'inkflow_groq_api_key';
-  const MODEL_NAME_STORAGE = 'inkflow_groq_model_name';
+  const API_KEY_STORAGE   = 'inkflow_gemini_api_key';
 
   let base64ImageStr = '';
+  let imageMimeType  = 'image/jpeg';
 
   // ── Load saved configurations ──────────────────────────────────
   function loadConfigs() {
-    const savedKey = localStorage.getItem(API_KEY_STORAGE);
+    const savedKey = localStorage.getItem(API_KEY_STORAGE) || localStorage.getItem('inkflow_groq_api_key');
     if (savedKey) apiKeyInput.value = savedKey;
   }
 
@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function handleImage(file) {
     if (!file || !file.type.startsWith('image/')) return;
     try {
+      imageMimeType = file.type || 'image/jpeg';
       base64ImageStr = await readFileAsDataUrl(file);
       previewImg.src = base64ImageStr;
       previewImg.style.display = 'block';
@@ -78,15 +79,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.dataTransfer.files[0]) handleImage(e.dataTransfer.files[0]);
   });
 
-  // ── Process with Groq AI ───────────────────────────────────────
+  // ── Process with Gemini AI ──────────────────────────────────────
   processBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
 
     const apiKey = apiKeyInput.value.trim();
-    const model = modelInput.value.trim() || 'meta-llama/llama-4-scout-17b-16e-instruct';
+    const model = (modelInput && modelInput.value.trim()) || 'gemma-4-31b-it';
 
     if (!apiKey) {
-      alert('Please enter your Groq API key.');
+      alert('Please enter your Gemini API key.');
       return;
     }
 
@@ -103,9 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadingIndicator.style.display = 'flex';
 
     try {
-      const isVisionModel = model.toLowerCase().includes('vision') || model.toLowerCase().includes('scout');
-      let contentPayload;
-
       const systemPrompt = `You are an OCR and document formatting assistant specialized in handwritten medical purchase orders.
 
 TASK:
@@ -170,50 +168,73 @@ IMPORTANT:
 - Do not use markdown tables.
 - Return plain text inside a code block only.`;
 
-      if (isVisionModel) {
-        contentPayload = [
-          {
-            type: 'text',
-            text: systemPrompt
-          },
-          {
-            type: 'image_url',
-            image_url: {
-              url: base64ImageStr
-            }
-          }
-        ];
-      } else {
-        contentPayload = `${systemPrompt}\n\nHere is the base64-encoded image to transcribe:\n${base64ImageStr}`;
-      }
+      // Extract raw base64 string without data URL prefix (e.g. data:image/jpeg;base64,...)
+      const rawBase64 = base64ImageStr.includes(',') ? base64ImageStr.split(',')[1] : base64ImageStr;
 
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${apiKey}`;
+
+      const requestBody = {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: systemPrompt
+              },
+              {
+                inlineData: {
+                  mimeType: imageMimeType,
+                  data: rawBase64
+                }
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          thinkingConfig: {
+            thinkingLevel: "MINIMAL"
+          }
+        },
+        tools: [
+          {
+            googleSearch: {}
+          }
+        ]
+      };
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            {
-              role: 'user',
-              content: contentPayload
-            }
-          ],
-          temperature: 0.1
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error?.message || `Server error: ${response.status}`);
+        throw new Error(errorData.error?.message || errorData[0]?.error?.message || `Server error: ${response.status}`);
       }
 
       const data = await response.json();
-      const transcribedText = data.choices[0]?.message?.content;
+      let transcribedText = '';
 
-      if (transcribedText) {
+      // Stream response returns an array of chunks [ { candidates: [...] }, ... ]
+      if (Array.isArray(data)) {
+        data.forEach(chunk => {
+          const parts = chunk.candidates?.[0]?.content?.parts || [];
+          parts.forEach(part => {
+            if (part.text) transcribedText += part.text;
+          });
+        });
+      } else if (data.candidates) {
+        // Single response object
+        const parts = data.candidates[0]?.content?.parts || [];
+        parts.forEach(part => {
+          if (part.text) transcribedText += part.text;
+        });
+      }
+
+      if (transcribedText.trim()) {
         let cleanText = transcribedText.trim();
         // Remove code block backticks if returned by the model
         cleanText = cleanText.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
@@ -222,13 +243,13 @@ IMPORTANT:
           // Dispatch synthetic input event to trigger render and state persistence
           editorTxt.dispatchEvent(new Event('input', { bubbles: true }));
         }
-        alert('Medicine list transcribed and formatted successfully!');
+        alert('Medicine list transcribed and formatted successfully with Gemini AI (streamGenerateContent)!');
       } else {
-        throw new Error('No transcription returned from the model.');
+        throw new Error('No transcription returned from Gemini model.');
       }
     } catch (err) {
       console.error(err);
-      alert(`Groq AI Error: ${err.message}`);
+      alert(`Gemini AI Error: ${err.message}`);
     } finally {
       processBtn.disabled = false;
       loadingIndicator.style.display = 'none';

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/global.css">
   <link rel="stylesheet" href="css/editor.css">
+  <link rel="stylesheet" href="css/notes.css">
 </head>
 <body>
 
@@ -21,6 +22,7 @@
         <a href="index.html" class="nav-link">Home</a>
         <a href="editor.html" class="nav-link active">Notepad Workspace</a>
         <a href="fonts.html" class="nav-link">Font Gallery</a>
+        <a href="notes.html" class="nav-link">Saved Notes</a>
         <a href="about.html" class="nav-link">About</a>
       </nav>
       <div class="nav-actions">
@@ -206,13 +208,13 @@
 
         <!-- AI Transcriber Section -->
         <div class="form-group ai-section" style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px;">
-          <label class="ai-label" style="display: flex; align-items: center; gap: 8px; font-weight: 600;"><i class="fa-solid fa-robot"></i> AI Medicine Transcriber</label>
+          <label class="ai-label" style="display: flex; align-items: center; gap: 8px; font-weight: 600;"><i class="fa-solid fa-robot"></i> AI Medicine Transcriber (Gemini)</label>
           <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
             <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Groq API Key</label>
-              <input type="password" id="ai-api-key" placeholder="gsk_..." style="padding: 8px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" title="Enter Groq API Key">
+              <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Gemini API Key</label>
+              <input type="password" id="ai-api-key" placeholder="AIzaSy..." style="padding: 8px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);" title="Enter Gemini API Key">
             </div>
-            <input type="hidden" id="ai-model" value="meta-llama/llama-4-scout-17b-16e-instruct">
+            <input type="hidden" id="ai-model" value="gemma-4-31b-it">
             <div style="display: flex; flex-direction: column; gap: 4px;">
               <label style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Upload Medicine Image</label>
               <div id="ai-drop-zone" class="stamp-drop-zone" style="border-style: dashed; padding: 12px; height: auto; min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer;">
@@ -224,13 +226,26 @@
                 <img id="ai-image-preview" style="display: none; max-width: 100%; max-height: 80px; border-radius: var(--radius-sm);" alt="Prescription preview">
               </div>
             </div>
-            <button id="btn-process-ai" class="btn btn-primary" style="width: 100%; padding: 10px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Format with Groq AI</button>
-            <div id="ai-loading" style="display: none; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: var(--text-secondary); margin-top: 4px;"><i class="fa-solid fa-spinner fa-spin"></i> Processing image...</div>
+            <button id="btn-process-ai" class="btn btn-primary" style="width: 100%; padding: 10px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Transcribe with Gemini AI</button>
+            <div id="ai-loading" style="display: none; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: var(--text-secondary); margin-top: 4px;"><i class="fa-solid fa-spinner fa-spin"></i> Processing image with Gemini...</div>
           </div>
         </div>
 
         <!-- Actions -->
         <div class="form-group" style="margin-top: 10px; display: flex; flex-direction: column; gap: 12px;">
+          <button id="btn-save-note" class="btn btn-primary" style="width: 100%; padding: 12px; background: linear-gradient(135deg,#4f46e5,#7c3aed);" title="Shortcut: Ctrl+Shift+S"><i class="fa-solid fa-bookmark"></i> Save Note <span style="font-size: 11px; opacity: 0.8;">(Ctrl+Shift+S)</span></button>
+          <button id="btn-add-page-sidebar" class="btn btn-secondary" style="width: 100%; padding: 12px; border-style: dashed;"><i class="fa-solid fa-plus"></i> Add New Page</button>
+
+          <!-- Slice controls -->
+          <div style="display: flex; gap: 8px;">
+            <button id="btn-slice-mode" class="btn btn-secondary slice-mode-btn" style="flex: 1; padding: 12px;" title="Slice a page horizontally into two pages">
+              <i class="fa-solid fa-scissors"></i> <span class="slice-btn-label">Slice Page</span>
+            </button>
+            <button id="btn-undo-slice" class="btn btn-secondary" style="padding: 12px 14px;" title="Undo last slice" disabled>
+              <i class="fa-solid fa-rotate-left"></i> <span class="undo-count"></span>
+            </button>
+          </div>
+
           <button id="btn-download" class="btn btn-primary" style="width: 100%; padding: 12px;" title="Shortcut: Ctrl+S"><i class="fa-solid fa-download"></i> Download Image <span style="font-size: 11px; opacity: 0.8;">(Ctrl+S)</span></button>
           <button id="btn-share" class="btn btn-primary" style="width: 100%; padding: 12px;" title="Shortcut: Ctrl+Alt+S"><i class="fa-solid fa-share-nodes"></i> Share Note <span style="font-size: 11px; opacity: 0.8;">(Ctrl+Alt+S)</span></button>
           <button id="btn-print" class="btn btn-secondary" style="width: 100%; padding: 12px;"><i class="fa-solid fa-file-pdf"></i> Print / Save as PDF</button>
@@ -246,14 +261,32 @@
 
       <!-- Right Panel (Paper Canvas Workspace) -->
       <main class="paper-workspace">
-        <div id="paper-sheet" class="paper-sheet">
-          <div id="margin-line" class="paper-margin-line"></div>
-          <div id="paper-out" class="paper-content-out" contenteditable="true" spellcheck="false"></div>
+        <div class="page-block" id="page-1-block">
+          <div class="page-num-label">
+            <span><i class="fa-regular fa-file"></i> Page 1</span>
+          </div>
+          <div id="paper-sheet" class="paper-sheet">
+            <div id="margin-line" class="paper-margin-line"></div>
+            <div id="paper-out" class="paper-content-out" contenteditable="true" spellcheck="false"></div>
+          </div>
         </div>
       </main>
 
     </div>
   </section>
+
+  <!-- Save Note Modal -->
+  <div id="save-note-modal" class="note-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
+    <div class="note-modal">
+      <h3 id="save-modal-title"><i class="fa-solid fa-bookmark"></i> Save Note</h3>
+      <p>Give your note a title so you can find it easily in your Saved Notes library.</p>
+      <input type="text" id="save-note-title" class="note-modal-input" placeholder="e.g. Sanjay Trading — July 24" maxlength="80">
+      <div class="note-modal-actions">
+        <button id="save-note-cancel" class="btn btn-secondary"><i class="fa-solid fa-xmark"></i> Cancel</button>
+        <button id="save-note-confirm" class="btn btn-primary" style="background: linear-gradient(135deg,#4f46e5,#7c3aed);"><i class="fa-solid fa-bookmark"></i> Save</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Footer (will be hidden during print) -->
   <footer>
@@ -314,5 +347,6 @@
   <script src="js/stamp.js"></script>
   <script src="js/custom_keys.js"></script>
   <script src="js/ai_transcriber.js"></script>
+  <script src="js/slicer.js"></script>
 </body>
 </html>

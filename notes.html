@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Font Gallery - Inkflow Notepad</title>
-  <meta name="description" content="Browse our catalog of premium handwriting and cursive script fonts. Test fonts in real-time and load them directly into the editor workspace.">
+  <title>Saved Notes - Inkflow Notepad</title>
+  <meta name="description" content="Browse, edit, and manage your saved handwriting notes. Open any note in the Inkflow workspace to continue editing.">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/global.css">
-  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/notes.css">
 </head>
 <body>
 
@@ -20,8 +20,8 @@
       <nav class="nav-links">
         <a href="index.html" class="nav-link">Home</a>
         <a href="editor.html" class="nav-link">Notepad Workspace</a>
-        <a href="fonts.html" class="nav-link active">Font Gallery</a>
-        <a href="notes.html" class="nav-link">Saved Notes</a>
+        <a href="fonts.html" class="nav-link">Font Gallery</a>
+        <a href="notes.html" class="nav-link active">Saved Notes</a>
         <a href="about.html" class="nav-link">About</a>
       </nav>
       <div class="nav-actions">
@@ -37,34 +37,44 @@
     </div>
   </header>
 
-  <!-- Gallery Section -->
-  <section class="gallery-section">
+  <!-- Notes Library Section -->
+  <section class="notes-section">
     <div class="container">
-      <div class="gallery-header">
-        <h1 class="hero-tag"><i class="fa-solid fa-font"></i> Typography Catalog</h1>
-        <h2 class="section-title" style="text-align: left; font-size: 38px; margin-top: 10px;">Handwriting Styles</h2>
-        <p class="section-subtitle" style="text-align: left; margin: 0; max-width: 600px;">Explore beautiful cursive and pen-drawn script fonts. Enter custom text below to preview all fonts simultaneously.</p>
-      </div>
 
-      <!-- Controls -->
-      <div class="control-bar">
-        <div class="preview-input-group">
-          <label for="preview-text">Preview Text</label>
-          <input type="text" id="preview-text" class="preview-text-box" placeholder="Type custom preview text...">
-        </div>
-        <div class="filter-group">
-          <label for="search-font">Search Fonts</label>
-          <div class="search-box">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="search-font" placeholder="Filter by name or style...">
+      <!-- Page Header -->
+      <div class="notes-page-header">
+        <div class="notes-page-header-left">
+          <span class="hero-tag"><i class="fa-solid fa-book-bookmark"></i> Notes Library</span>
+          <h1>Your Saved Notes</h1>
+          <p>All notes are stored locally in your browser. Click any note to open it in the editor.</p>
+          <div class="notes-count-badge">
+            <i class="fa-solid fa-layer-group"></i>
+            <span id="notes-count">0 Notes</span>
           </div>
         </div>
+        <a href="editor.html" class="btn btn-primary">
+          <i class="fa-solid fa-plus"></i> New Note
+        </a>
       </div>
 
-      <!-- Grid -->
-      <div id="font-grid" class="font-grid">
-        <!-- Rendered by fonts.js -->
+      <!-- Search & Sort Controls -->
+      <div class="notes-controls">
+        <div class="notes-search-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="notes-search" class="notes-search-input" placeholder="Search by title or content...">
+        </div>
+        <select id="notes-sort" class="notes-sort-select">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="alpha">A → Z</option>
+        </select>
       </div>
+
+      <!-- Notes Card Grid -->
+      <div id="notes-grid" class="notes-grid">
+        <!-- Rendered by notes.js -->
+      </div>
+
     </div>
   </section>
 
@@ -102,6 +112,6 @@
   </footer>
 
   <script src="js/global.js"></script>
-  <script src="js/fonts.js"></script>
+  <script src="js/notes.js"></script>
 </body>
 </html>
