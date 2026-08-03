@@ -50,7 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
     underlineThickness: 2,
     ink: '#1a2a6c', // Gel Blue default
     paperPreset: 'ruled', // classic lined default
-    extraPages: [] // array of { text: '' } for additional pages
+    page1Height: null, // height in px if sliced
+    page1Title: 'Page 1', // custom title for page 1
+    extraPages: [] // array of { text: '', height: null, title: '', sheetId: '' }
   };
 
   // Load state from local storage if exists
@@ -94,6 +96,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (savedNote.margin !== undefined)             state.margin = savedNote.margin;
           if (savedNote.boldWeight !== undefined)         state.boldWeight = savedNote.boldWeight;
           if (savedNote.underlineThickness !== undefined) state.underlineThickness = savedNote.underlineThickness;
+          if (savedNote.page1Height !== undefined)        state.page1Height = savedNote.page1Height;
+          if (savedNote.page1Title !== undefined)         state.page1Title = savedNote.page1Title;
+          if (savedNote.extraPages !== undefined)         state.extraPages = savedNote.extraPages;
           // Strip the ?note= param from the URL so refreshing doesn't re-load old state
           history.replaceState(null, '', window.location.pathname);
         }
@@ -103,8 +108,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ── Sync extra page contents from DOM into state ─────────────
+  function syncExtraPagesFromDOM() {
+    const blocks = document.querySelectorAll('.extra-page-block');
+    const updated = [];
+    blocks.forEach((block, idx) => {
+      const co = block.querySelector('.paper-content-out');
+      const sheet = block.querySelector('.paper-sheet');
+      const titleText = block.querySelector('.page-title-text');
+
+      const existing = (state.extraPages && state.extraPages[idx]) ? state.extraPages[idx] : {};
+      const text = co ? (co.innerText || co.textContent || '') : (existing.text || '');
+      const title = titleText ? titleText.textContent.trim() : (existing.title || `Page ${idx + 2}`);
+      const sheetId = sheet ? (sheet.getAttribute('data-sheet-id') || existing.sheetId) : (existing.sheetId || ('sheet-' + Date.now()));
+      const height = existing.height || null;
+
+      updated.push({ text, title, sheetId, height });
+    });
+    state.extraPages = updated;
+    return state.extraPages;
+  }
+
   // Save current state to local storage
   function saveState() {
+    syncExtraPagesFromDOM();
     localStorage.setItem('inkflow_state', JSON.stringify({
       text: state.text,
       font: state.font,
@@ -118,6 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
       underlineThickness: state.underlineThickness,
       ink: state.ink,
       paperPreset: state.paperPreset,
+      page1Height: state.page1Height,
+      page1Title: state.page1Title,
       extraPages: state.extraPages
     }));
   }
@@ -420,12 +449,51 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ── Inline editable page title label ─────────────────────────
+  function makePageLabelEditable(containerSpan, getTitle, setTitle) {
+    const textSpan = containerSpan.querySelector('.page-title-text');
+    if (!textSpan) return;
+
+    textSpan.style.cursor = 'pointer';
+    textSpan.title = 'Click to rename page';
+
+    textSpan.addEventListener('click', function startEdit() {
+      const current = getTitle();
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'page-title-input';
+      input.value = current;
+      textSpan.replaceWith(input);
+      input.focus();
+      input.select();
+
+      function commit() {
+        const newTitle = input.value.trim() || current;
+        setTitle(newTitle);
+        const newTextSpan = document.createElement('span');
+        newTextSpan.className = 'page-title-text';
+        newTextSpan.textContent = newTitle;
+        input.replaceWith(newTextSpan);
+        makePageLabelEditable(containerSpan, getTitle, setTitle);
+        saveState();
+        document.dispatchEvent(new CustomEvent('inkflow-page-renamed'));
+      }
+
+      input.addEventListener('blur', commit, { once: true });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { input.value = current; input.blur(); }
+      });
+    }, { once: true });
+  }
+
   // Create and append a new page sheet
   function addNewPage() {
     const pageIndex = state.extraPages.length; // 0-based index in extraPages
     const pageNum   = pageIndex + 2;           // Display number (page 1 is the main)
+    const sheetId   = 'sheet-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
 
-    const pageDat = { text: '' };
+    const pageDat = { text: '', title: `Page ${pageNum}`, sheetId };
     state.extraPages.push(pageDat);
 
     const pageWrap = document.createElement('div');
@@ -434,14 +502,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     pageWrap.innerHTML = `
       <div class="page-num-label">
-        <span><i class="fa-regular fa-file"></i> Page ${pageNum}</span>
+        <span><i class="fa-regular fa-file"></i> <span class="page-title-text"></span></span>
         <button class="page-remove-btn" title="Remove this page"><i class="fa-solid fa-xmark"></i> Remove Page</button>
       </div>
-      <div class="paper-sheet extra-page">
+      <div class="paper-sheet extra-page" data-sheet-id="${sheetId}">
         <div class="paper-margin-line"></div>
         <div class="paper-content-out" contenteditable="true" spellcheck="false"></div>
       </div>
     `;
+
+    // Set title text safely via textContent
+    pageWrap.querySelector('.page-title-text').textContent = pageDat.title;
+
+    // Wire up editable title label
+    const labelSpan = pageWrap.querySelector('.page-num-label > span');
+    if (labelSpan) makePageLabelEditable(labelSpan, () => pageDat.title, (t) => { pageDat.title = t; });
 
     // Insert before the add-page strip (or append if strip doesn't exist)
     const addStrip = document.getElementById('add-page-strip');
@@ -472,10 +547,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Remove page button
     pageWrap.querySelector('.page-remove-btn').addEventListener('click', () => {
-      if (confirm(`Remove Page ${pageNum}? All content on this page will be lost.`)) {
-        state.extraPages.splice(pageIndex, 1);
+      if (confirm(`Remove "${pageDat.title}"? All content on this page will be lost.`)) {
+        const idx = state.extraPages.indexOf(pageDat);
+        if (idx !== -1) state.extraPages.splice(idx, 1);
         pageWrap.remove();
-        // Re-number remaining pages
         renumberPages();
         saveState();
       }
@@ -487,34 +562,98 @@ document.addEventListener('DOMContentLoaded', () => {
     saveState();
   }
 
-  // Re-label page numbers after a removal
+  // Re-index page blocks after a removal (titles are custom; only update data attribute)
   function renumberPages() {
     const blocks = document.querySelectorAll('.extra-page-block');
     blocks.forEach((block, i) => {
-      const label = block.querySelector('.page-num-label span');
-      if (label) label.innerHTML = `<i class="fa-regular fa-file"></i> Page ${i + 2}`;
       block.setAttribute('data-page-index', i);
     });
   }
 
   // Restore extra pages from saved state on load
   function restoreExtraPages() {
-    if (!state.extraPages || state.extraPages.length === 0) return;
-    // Save and restore to avoid mutation issues
-    const pages = state.extraPages.slice();
-    state.extraPages = [];
-    pages.forEach(pageDat => {
-      // addNewPage pushes to state.extraPages, so reset then re-push
-      addNewPage();
-      // Set the restored text into the DOM and state
-      const lastBlock = document.querySelector('.extra-page-block:last-of-type');
-      if (lastBlock) {
-        const contentOut = lastBlock.querySelector('.paper-content-out');
-        if (contentOut) {
-          contentOut.innerText = pageDat.text || '';
-          state.extraPages[state.extraPages.length - 1].text = pageDat.text || '';
-        }
+    // Clear any existing extra page DOM blocks
+    document.querySelectorAll('.extra-page-block').forEach(el => el.remove());
+
+    if (!state.extraPages || !Array.isArray(state.extraPages) || state.extraPages.length === 0) {
+      state.extraPages = [];
+      return;
+    }
+
+    const pagesToRestore = JSON.parse(JSON.stringify(state.extraPages));
+    state.extraPages = []; // Will be populated as pages are created
+
+    pagesToRestore.forEach((savedDat, idx) => {
+      const pageNum = idx + 2;
+      const sheetId = savedDat.sheetId || ('sheet-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6));
+      const title = savedDat.title || `Page ${pageNum}`;
+      const text = savedDat.text || '';
+      const height = savedDat.height || null;
+
+      const pageDat = { text, title, sheetId, height };
+      state.extraPages.push(pageDat);
+
+      const pageWrap = document.createElement('div');
+      pageWrap.className = 'page-block extra-page-block';
+      pageWrap.setAttribute('data-page-index', idx);
+
+      pageWrap.innerHTML = `
+        <div class="page-num-label">
+          <span><i class="fa-regular fa-file"></i> <span class="page-title-text"></span></span>
+          <button class="page-remove-btn" title="Remove this page"><i class="fa-solid fa-xmark"></i> Remove Page</button>
+        </div>
+        <div class="paper-sheet extra-page" data-sheet-id="${sheetId}">
+          <div class="paper-margin-line"></div>
+          <div class="paper-content-out" contenteditable="true" spellcheck="false"></div>
+        </div>
+      `;
+
+      pageWrap.querySelector('.page-title-text').textContent = title;
+
+      const labelSpan = pageWrap.querySelector('.page-num-label > span');
+      if (labelSpan) makePageLabelEditable(labelSpan, () => pageDat.title, (t) => { pageDat.title = t; });
+
+      const addStrip = document.getElementById('add-page-strip');
+      if (addStrip) {
+        paperWorkspace.insertBefore(pageWrap, addStrip);
+      } else {
+        paperWorkspace.appendChild(pageWrap);
       }
+
+      const sheet = pageWrap.querySelector('.paper-sheet');
+      const marginEl = pageWrap.querySelector('.paper-margin-line');
+      const contentOut = pageWrap.querySelector('.paper-content-out');
+
+      contentOut.innerText = text;
+
+      applySheetStyle(sheet, marginEl);
+      if (height && sheet) {
+        sheet.style.minHeight = 'auto';
+        sheet.style.height = height + 'px';
+        sheet.classList.add('sliced-paper');
+      }
+
+      contentOut.style.fontFamily    = state.font;
+      contentOut.style.fontSize      = state.size + 'px';
+      contentOut.style.lineHeight    = state.lineHeight + 'px';
+      contentOut.style.letterSpacing = state.letterSpacing + 'px';
+      contentOut.style.wordSpacing   = state.wordSpacing + 'px';
+      contentOut.style.color         = state.ink;
+
+      contentOut.addEventListener('input', () => {
+        pageDat.text = contentOut.innerText || contentOut.textContent || '';
+        saveState();
+      });
+
+      pageWrap.querySelector('.page-remove-btn').addEventListener('click', () => {
+        if (confirm(`Remove "${pageDat.title}"? All content on this page will be lost.`)) {
+          const i = state.extraPages.indexOf(pageDat);
+          if (i !== -1) state.extraPages.splice(i, 1);
+          pageWrap.remove();
+          renumberPages();
+          saveState();
+        }
+      });
     });
   }
 
@@ -531,8 +670,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Insert a new page immediately after a specific block (null = after page 1).
   // Used by the slicer and snapshot restore.
-  function insertPageAfterBlock(afterBlock, initialText) {
-    const pageDat = { text: initialText || '' };
+  function insertPageAfterBlock(afterBlock, initialText, initialHeight) {
+    const sheetId = 'sheet-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+    const pageDat = { text: initialText || '', height: initialHeight || null, title: 'Page', sheetId };
 
     // Determine insertion index in state.extraPages
     let insertAtIdx = 0;
@@ -548,14 +688,21 @@ document.addEventListener('DOMContentLoaded', () => {
     pageWrap.className = 'page-block extra-page-block';
     pageWrap.innerHTML = `
       <div class="page-num-label">
-        <span><i class="fa-regular fa-file"></i> Page</span>
+        <span><i class="fa-regular fa-file"></i> <span class="page-title-text"></span></span>
         <button class="page-remove-btn" title="Remove this page"><i class="fa-solid fa-xmark"></i> Remove Page</button>
       </div>
-      <div class="paper-sheet extra-page">
+      <div class="paper-sheet extra-page" data-sheet-id="${sheetId}">
         <div class="paper-margin-line"></div>
         <div class="paper-content-out" contenteditable="true" spellcheck="false"></div>
       </div>
     `;
+
+    // Set title safely via textContent
+    pageWrap.querySelector('.page-title-text').textContent = pageDat.title;
+
+    // Wire editable label
+    const labelSpan = pageWrap.querySelector('.page-num-label > span');
+    if (labelSpan) makePageLabelEditable(labelSpan, () => pageDat.title, (t) => { pageDat.title = t; });
 
     // Determine DOM insertion point
     const addStrip = document.getElementById('add-page-strip');
@@ -582,6 +729,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Apply current styling
     applySheetStyle(sheet, marginEl);
+    if (initialHeight && sheet) {
+      sheet.style.minHeight = 'auto';
+      sheet.style.height = initialHeight + 'px';
+      sheet.classList.add('sliced-paper');
+    }
     contentOut.style.fontFamily    = state.font;
     contentOut.style.fontSize      = state.size + 'px';
     contentOut.style.lineHeight    = state.lineHeight + 'px';
@@ -843,23 +995,26 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Page Picker Modal (shared by download & share) ────────────
-  // Returns a Promise that resolves with an array of selected page sheets,
+  // Returns a Promise that resolves with an array of selected page objects { label, sheet },
   // or null if user cancelled.
   function openPagePickerModal(actionLabel) {
     return new Promise((resolve) => {
-      // Build the list of all pages
+      // Build the list of all pages with dynamic titles and sheets
       const allPages = [];
-      // Page 1 — main sheet
-      allPages.push({ label: 'Page 1', sheet: paperSheet });
-      // Extra pages
+      const page1Title = state.page1Title || 'Page 1';
+      allPages.push({ label: page1Title, sheet: paperSheet });
+
       document.querySelectorAll('.extra-page-block').forEach((block, i) => {
         const sheet = block.querySelector('.paper-sheet');
-        if (sheet) allPages.push({ label: `Page ${i + 2}`, sheet });
+        const customTitle = (state.extraPages[i] && state.extraPages[i].title)
+          ? state.extraPages[i].title
+          : (block.querySelector('.page-title-text')?.textContent.trim() || `Page ${i + 2}`);
+        if (sheet) allPages.push({ label: customTitle, sheet });
       });
 
       // If only one page, skip the modal
       if (allPages.length === 1) {
-        resolve([allPages[0].sheet]);
+        resolve([allPages[0]]);
         return;
       }
 
@@ -938,8 +1093,8 @@ document.addEventListener('DOMContentLoaded', () => {
           alert('Please select at least one page.');
           return;
         }
-        const selectedSheets = checked.map(cb => allPages[parseInt(cb.value)].sheet);
-        closeModal(selectedSheets);
+        const selectedPages = checked.map(cb => allPages[parseInt(cb.value)]);
+        closeModal(selectedPages);
       });
     });
   }
@@ -963,27 +1118,25 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const selectedSheets = await openPagePickerModal('Download');
-    if (!selectedSheets) return; // user cancelled
+    const selectedPages = await openPagePickerModal('Download');
+    if (!selectedPages) return; // user cancelled
 
-    showToast(`Downloading ${selectedSheets.length} page${selectedSheets.length > 1 ? 's' : ''}...`);
+    showToast(`Downloading ${selectedPages.length} page${selectedPages.length > 1 ? 's' : ''}...`);
 
-    for (let i = 0; i < selectedSheets.length; i++) {
+    for (let i = 0; i < selectedPages.length; i++) {
       try {
-        const canvas = await captureSheet(selectedSheets[i]);
+        const pageObj = selectedPages[i];
+        const safeName = pageObj.label.replace(/[^a-zA-Z0-9_\-\s]/g, '').trim().replace(/\s+/g, '_') || `Page_${i + 1}`;
+        const canvas = await captureSheet(pageObj.sheet);
         const dataUrl = canvas.toDataURL('image/png');
         const a = document.createElement('a');
         a.href = dataUrl;
-        // Name the file by page if multiple
-        a.download = selectedSheets.length > 1
-          ? `Inkflow_Note_Page${i + 1}.png`
-          : 'Inkflow_Note.png';
+        a.download = `Inkflow_${safeName}.png`;
         a.click();
-        // Small delay between sequential downloads
-        if (i < selectedSheets.length - 1) await new Promise(r => setTimeout(r, 400));
+        if (i < selectedPages.length - 1) await new Promise(r => setTimeout(r, 400));
       } catch (e) {
         console.error(`Failed to generate image for page ${i + 1}`, e);
-        alert(`Failed to generate image for page ${i + 1}.`);
+        alert(`Failed to generate image for ${selectedPages[i].label}.`);
       }
     }
   }
@@ -999,22 +1152,21 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const selectedSheets = await openPagePickerModal('Share');
-    if (!selectedSheets) return; // user cancelled
+    const selectedPages = await openPagePickerModal('Share');
+    if (!selectedPages) return; // user cancelled
 
     showToast('Preparing images to share...');
 
     try {
       // Capture all selected pages into File objects
       const files = [];
-      for (let i = 0; i < selectedSheets.length; i++) {
-        const canvas = await captureSheet(selectedSheets[i]);
+      for (let i = 0; i < selectedPages.length; i++) {
+        const pageObj = selectedPages[i];
+        const safeName = pageObj.label.replace(/[^a-zA-Z0-9_\-\s]/g, '').trim().replace(/\s+/g, '_') || `Page_${i + 1}`;
+        const canvas = await captureSheet(pageObj.sheet);
         const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
         if (!blob) continue;
-        const fileName = selectedSheets.length > 1
-          ? `Inkflow_Note_Page${i + 1}.png`
-          : 'Inkflow_Note.png';
-        files.push(new File([blob], fileName, { type: 'image/png' }));
+        files.push(new File([blob], `Inkflow_${safeName}.png`, { type: 'image/png' }));
       }
 
       if (files.length === 0) {
@@ -1059,7 +1211,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
       const dateStr = `Date: ${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
       state.text = `${dateStr}\n\n`;
+      state.page1Title = 'Page 1';
+      state.page1Height = null;
       if (txt) txt.value = state.text;
+
+      // Reset Page 1 label title text in DOM
+      const page1TitleSpan = document.getElementById('page-1-title-span');
+      if (page1TitleSpan) {
+        const titleTextEl = page1TitleSpan.querySelector('.page-title-text');
+        if (titleTextEl) titleTextEl.textContent = 'Page 1';
+      }
+
       // Remove all extra pages
       state.extraPages = [];
       document.querySelectorAll('.extra-page-block').forEach(el => el.remove());
@@ -1083,6 +1245,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const NOTES_KEY = 'inkflow_saved_notes';
 
   function saveNoteToLibrary(title) {
+    // ── Flush latest content from Page 1 and all Extra Pages ──
+    if (paperOut) {
+      const md = htmlToMarkdown(paperOut.innerHTML);
+      if (md !== state.text) {
+        state.text = md;
+        if (txt) txt.value = md;
+      }
+    }
+    syncExtraPagesFromDOM();
+
     const allNotes = (() => {
       try { return JSON.parse(localStorage.getItem(NOTES_KEY) || '[]'); }
       catch (e) { return []; }
@@ -1103,6 +1275,9 @@ document.addEventListener('DOMContentLoaded', () => {
       margin: state.margin,
       boldWeight: state.boldWeight,
       underlineThickness: state.underlineThickness,
+      page1Height: state.page1Height,
+      page1Title: state.page1Title || 'Page 1',
+      extraPages: JSON.parse(JSON.stringify(state.extraPages)), // deep snapshot
       savedAt: new Date().toISOString()
     };
 
@@ -1450,6 +1625,18 @@ document.addEventListener('DOMContentLoaded', () => {
   initAddPageStrip();
   restoreExtraPages();
   render();
+
+  // Wire Page 1 label for inline rename
+  const page1TitleSpan = document.getElementById('page-1-title-span');
+  if (page1TitleSpan) {
+    const titleTextEl = page1TitleSpan.querySelector('.page-title-text');
+    if (titleTextEl) titleTextEl.textContent = state.page1Title || 'Page 1';
+    makePageLabelEditable(
+      page1TitleSpan,
+      () => state.page1Title,
+      (t) => { state.page1Title = t; }
+    );
+  }
 
   // ── Expose Editor API for external modules (slicer.js, etc.) ──
   window.inkflow = {

@@ -98,7 +98,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const sortBy = sortSelect ? sortSelect.value : 'newest';
 
     let filtered = query
-      ? allNotes.filter(n => n.title.toLowerCase().includes(query) || n.text.toLowerCase().includes(query))
+      ? allNotes.filter(n => {
+          const matchTitle = n.title.toLowerCase().includes(query);
+          const matchText = n.text.toLowerCase().includes(query);
+          const matchPage1Title = (n.page1Title || '').toLowerCase().includes(query);
+          const matchExtras = n.extraPages && Array.isArray(n.extraPages) && n.extraPages.some(ep =>
+            (ep.text || '').toLowerCase().includes(query) || (ep.title || '').toLowerCase().includes(query)
+          );
+          return matchTitle || matchText || matchPage1Title || matchExtras;
+        })
       : allNotes;
 
     // Sort
@@ -145,6 +153,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const fontDisplay = getFontDisplayName(note.font || "'Caveat', cursive");
       const ink = note.ink || '#1a2a6c';
 
+      // Page count calculation
+      const extraCount = (note.extraPages && Array.isArray(note.extraPages)) ? note.extraPages.length : 0;
+      const pageCount = 1 + extraCount;
+
+      // Page titles list for tooltip
+      const page1Name = note.page1Title || 'Page 1';
+      const pageTitleList = [page1Name];
+      if (note.extraPages && Array.isArray(note.extraPages)) {
+        note.extraPages.forEach((p, idx) => {
+          pageTitleList.push(p.title || `Page ${idx + 2}`);
+        });
+      }
+      const pageTitlesStr = pageTitleList.join(', ');
+
       // Margin color from preset
       const marginColors = {
         ruled: '#d98ba0', legal: '#ea7085', vintage: '#c27c88', grid: '', blank: ''
@@ -162,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="note-card-title" title="${escapeHtml(note.title)}">${escapeHtml(note.title)}</div>
           <div class="note-card-date"><i class="fa-regular fa-clock"></i> ${formatDate(note.savedAt)}</div>
           <div class="note-card-tags">
+            <span class="note-tag tag-pages" title="${escapeHtml(pageTitlesStr)}"><i class="fa-regular fa-file" style="font-size:9px;"></i> ${pageCount} ${pageCount === 1 ? 'Page' : 'Pages'}</span>
             <span class="note-tag tag-font"><i class="fa-solid fa-font" style="font-size:9px;"></i> ${escapeHtml(fontDisplay)}</span>
             <span class="note-tag">${escapeHtml(note.paperPreset || 'ruled')}</span>
             <span class="note-tag" style="background:${ink}20; color:${ink}; border-color:${ink}40;">

@@ -1,4 +1,4 @@
-// Handwriting Font List Data
+// Handwriting Font List Data (49 Cursive & Pen Script Fonts)
 const FONTS_DATA = [
   {
     name: 'Caveat',
@@ -8,17 +8,94 @@ const FONTS_DATA = [
     charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
   },
   {
-    name: 'Nanum Pen Script',
-    designer: 'Sandoll',
-    family: "'Nanum Pen Script', cursive",
-    style: 'Sharp & Stylish',
-    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
-  },
-  {
     name: 'Kalam',
     designer: 'Indian Type Foundry',
     family: "'Kalam', cursive",
     style: 'Modern Ink Pen',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Shadows Into Light',
+    designer: 'Kimberly Geswein',
+    family: "'Shadows Into Light', cursive",
+    style: 'Neat & Clean Pen',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Covered By Your Grace',
+    designer: 'Kimberly Geswein',
+    family: "'Covered By Your Grace', cursive",
+    style: 'Doctor Prescription Script',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Nothing You Could Say',
+    designer: 'Kimberly Geswein',
+    family: "'Nothing You Could Say', cursive",
+    style: 'Messy Fast Handwriting',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Homemade Apple',
+    designer: 'Font Diner',
+    family: "'Homemade Apple', cursive",
+    style: 'Authentic Penciled Note',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Cedarville Cursive',
+    designer: 'Kimberly Geswein',
+    family: "'Cedarville Cursive', cursive",
+    style: 'Everyday Natural Cursive',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'La Belle Aurore',
+    designer: 'Kimberly Geswein',
+    family: "'La Belle Aurore', cursive",
+    style: 'Fine Ink Pen Script',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Zeyada',
+    designer: 'Kimberly Geswein',
+    family: "'Zeyada', cursive",
+    style: 'Thin Ballpoint Handwriting',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Waiting for the Sunrise',
+    designer: 'Kimberly Geswein',
+    family: "'Waiting for the Sunrise', cursive",
+    style: 'Narrow Pen Script',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Gochi Hand',
+    designer: 'Huerta Tipográfica',
+    family: "'Gochi Hand', cursive",
+    style: 'Felt-tip Marker Pen',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Give You Glory',
+    designer: 'Kimberly Geswein',
+    family: "'Give You Glory', cursive",
+    style: 'Casual Messy Handwriting',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Gloria Hallelujah',
+    designer: 'Kimberly Geswein',
+    family: "'Gloria Hallelujah', cursive",
+    style: 'Whiteboard Marker',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Nanum Pen Script',
+    designer: 'Sandoll',
+    family: "'Nanum Pen Script', cursive",
+    style: 'Sharp & Stylish',
     charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
   },
   {
@@ -43,6 +120,111 @@ const FONTS_DATA = [
     charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
   },
   {
+    name: 'Reenie Beanie',
+    designer: 'James Grieshaber',
+    family: "'Reenie Beanie', cursive",
+    style: 'Fine Ballpoint Pen',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Just Another Hand',
+    designer: 'Astigmatic',
+    family: "'Just Another Hand', cursive",
+    style: 'Narrow Marker Script',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Herr Von Muellerhoff',
+    designer: 'Sudtipos',
+    family: "'Herr Von Muellerhoff', cursive",
+    style: 'Vintage Calligraphic Flourishes',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Monsieur La Doulaise',
+    designer: 'Sudtipos',
+    family: "'Monsieur La Doulaise', cursive",
+    style: '19th-Century Copperplate',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Parisienne',
+    designer: 'Astigmatic',
+    family: "'Parisienne', cursive",
+    style: 'Elegant French Script',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Qwigley',
+    designer: 'TypeSETit',
+    family: "'Qwigley', cursive",
+    style: 'Soft Flowing Luxury Script',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Allison',
+    designer: 'TypeSETit',
+    family: "'Allison', cursive",
+    style: 'Delicate Feminine Handwriting',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Aguafina Script',
+    designer: 'Sudtipos',
+    family: "'Aguafina Script', cursive",
+    style: 'Graceful Semi-formal Script',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Fondamento',
+    designer: 'Astigmatic',
+    family: "'Fondamento', cursive",
+    style: 'Calligraphic Cursive',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Great Vibes',
+    designer: 'TypeSETit',
+    family: "'Great Vibes', cursive",
+    style: 'Luxury Calligraphy',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Satisfy',
+    designer: 'SideFlavored',
+    family: "'Satisfy', cursive",
+    style: 'Smooth Brush Cursive',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Marck Script',
+    designer: 'Marck Fogel',
+    family: "'Marck Script', cursive",
+    style: 'Fountain Pen Slant',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Alex Brush',
+    designer: 'TypeSETit',
+    family: "'Alex Brush', cursive",
+    style: 'Fine Copperplate',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Courgette',
+    designer: 'Karolina Lach',
+    family: "'Courgette', cursive",
+    style: 'Heavy Ink Italic',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Tangerine',
+    designer: 'Toshi Omagari',
+    family: "'Tangerine', cursive",
+    style: 'Tall Fine Calligraphy',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
     name: 'Sacramento',
     designer: 'Astigmatic',
     family: "'Sacramento', cursive",
@@ -54,6 +236,27 @@ const FONTS_DATA = [
     designer: 'Impallari Type',
     family: "'Dancing Script', cursive",
     style: 'Formal Script',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Mr Dafoe',
+    designer: 'Sudtipos',
+    family: "'Mr Dafoe', cursive",
+    style: 'Bold Retro Script',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Yellowtail',
+    designer: 'Astigmatic',
+    family: "'Yellowtail', cursive",
+    style: 'Flat Brush Cursive',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Grand Hotel',
+    designer: 'Astigmatic',
+    family: "'Grand Hotel', cursive",
+    style: 'Vintage Ribbon Cursive',
     charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
   },
   {
@@ -71,6 +274,41 @@ const FONTS_DATA = [
     charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
   },
   {
+    name: 'Playwrite US',
+    designer: 'TypeTogether',
+    family: '"Playwrite US", cursive',
+    style: 'American School Cursive',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Playwrite DE',
+    designer: 'TypeTogether',
+    family: '"Playwrite DE", cursive',
+    style: 'European School Cursive',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Playwrite UK',
+    designer: 'TypeTogether',
+    family: '"Playwrite UK", cursive',
+    style: 'British School Cursive',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Playwrite FR',
+    designer: 'TypeTogether',
+    family: '"Playwrite FR", cursive',
+    style: 'French School Cursive',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Playwrite IT',
+    designer: 'TypeTogether',
+    family: '"Playwrite IT", cursive',
+    style: 'Italian School Cursive',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
     name: 'Tillana',
     designer: 'Indian Type Foundry',
     family: "'Tillana', cursive",
@@ -82,6 +320,20 @@ const FONTS_DATA = [
     designer: 'Indian Type Foundry',
     family: "'Dekko', cursive",
     style: 'Casual Friendly Pen',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Rock Salt',
+    designer: 'Sideshow',
+    family: "'Rock Salt', cursive",
+    style: 'Rough Felt Marker',
+    charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
+  },
+  {
+    name: 'Cookie',
+    designer: 'Annet Schmidt',
+    family: "'Cookie', cursive",
+    style: '1950s Retro Cursive',
     charMap: 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz 0-9'
   },
   {

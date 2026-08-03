@@ -58,17 +58,53 @@
           <label for="editor-font">Handwriting Cursive Font</label>
           <select id="editor-font" class="editor-select">
             <option value="'Caveat', cursive">Caveat (Playful)</option>
+            <option value="'Kalam', cursive">Kalam (Modern Ink Pen)</option>
+            <option value="'Shadows Into Light', cursive">Shadows Into Light (Neat Pen)</option>
+            <option value="'Covered By Your Grace', cursive">Covered By Your Grace (Doctor Script)</option>
+            <option value="'Nothing You Could Say', cursive">Nothing You Could Say (Messy Fast Pen)</option>
+            <option value="'Homemade Apple', cursive">Homemade Apple (Authentic Pencil)</option>
+            <option value="'Cedarville Cursive', cursive">Cedarville Cursive (Natural Everyday)</option>
+            <option value="'La Belle Aurore', cursive">La Belle Aurore (Fine Ink Pen)</option>
+            <option value="'Zeyada', cursive">Zeyada (Thin Ballpoint)</option>
+            <option value="'Waiting for the Sunrise', cursive">Waiting for the Sunrise (Narrow Pen)</option>
+            <option value="'Gochi Hand', cursive">Gochi Hand (Felt-tip Pen)</option>
+            <option value="'Give You Glory', cursive">Give You Glory (Casual Messy)</option>
+            <option value="'Gloria Hallelujah', cursive">Gloria Hallelujah (Whiteboard Marker)</option>
             <option value="'Nanum Pen Script', cursive">Nanum Pen Script (Stylized)</option>
-            <option value="'Kalam', cursive">Kalam (Ink Pen)</option>
             <option value="'Architects Daughter', cursive">Architects Daughter (Sketch)</option>
             <option value="'Patrick Hand', cursive">Patrick Hand (Friendly)</option>
             <option value="'Indie Flower', cursive">Indie Flower (Bubbly)</option>
+            <option value="'Reenie Beanie', cursive">Reenie Beanie (Fine Ballpoint)</option>
+            <option value="'Just Another Hand', cursive">Just Another Hand (Narrow Marker)</option>
+            <option value="'Herr Von Muellerhoff', cursive">Herr Von Muellerhoff (Vintage Calligraphy)</option>
+            <option value="'Monsieur La Doulaise', cursive">Monsieur La Doulaise (19th-C Copperplate)</option>
+            <option value="'Parisienne', cursive">Parisienne (French Script)</option>
+            <option value="'Qwigley', cursive">Qwigley (Soft Luxury Script)</option>
+            <option value="'Allison', cursive">Allison (Feminine Delicate)</option>
+            <option value="'Aguafina Script', cursive">Aguafina Script (Graceful Script)</option>
+            <option value="'Fondamento', cursive">Fondamento (Calligraphic Cursive)</option>
+            <option value="'Great Vibes', cursive">Great Vibes (Luxury Calligraphy)</option>
+            <option value="'Satisfy', cursive">Satisfy (Smooth Brush Cursive)</option>
+            <option value="'Marck Script', cursive">Marck Script (Fountain Pen Slant)</option>
+            <option value="'Alex Brush', cursive">Alex Brush (Fine Copperplate)</option>
+            <option value="'Courgette', cursive">Courgette (Heavy Ink Italic)</option>
+            <option value="'Tangerine', cursive">Tangerine (Tall Calligraphy)</option>
             <option value="'Sacramento', cursive">Sacramento (Calligraphy)</option>
             <option value="'Dancing Script', cursive">Dancing Script (Formal)</option>
+            <option value="'Mr Dafoe', cursive">Mr Dafoe (Bold Retro Script)</option>
+            <option value="'Yellowtail', cursive">Yellowtail (Flat Brush)</option>
+            <option value="'Grand Hotel', cursive">Grand Hotel (Ribbon Cursive)</option>
             <option value="'Pacifico', cursive">Pacifico (Retro Bold)</option>
             <option value='"Playwrite IN", cursive'>Playwrite IN (Indian School Cursive)</option>
+            <option value='"Playwrite US", cursive'>Playwrite US (American Cursive)</option>
+            <option value='"Playwrite DE", cursive'>Playwrite DE (European Cursive)</option>
+            <option value='"Playwrite UK", cursive'>Playwrite UK (British Cursive)</option>
+            <option value='"Playwrite FR", cursive'>Playwrite FR (French Cursive)</option>
+            <option value='"Playwrite IT", cursive'>Playwrite IT (Italian Cursive)</option>
             <option value="'Tillana', cursive">Tillana (Calligraphic ITF)</option>
             <option value="'Dekko', cursive">Dekko (Casual ITF)</option>
+            <option value="'Rock Salt', cursive">Rock Salt (Felt Marker)</option>
+            <option value="'Cookie', cursive">Cookie (Retro Cursive)</option>
             <option value="'MyHandwriting', cursive">✍ MyHandwriting (Custom)</option>
           </select>
         </div>
@@ -171,6 +207,7 @@
           <!-- Template Actions (Add to Note, Delete permanently) -->
           <div id="stamp-template-actions" style="display:none; flex-direction:column; gap:8px; margin-top:8px;">
             <button id="stamp-add-btn" class="btn btn-primary" style="width: 100%; padding: 8px; font-size: 13px;"><i class="fa-solid fa-plus"></i> Add Stamp to Note</button>
+            <div id="stamp-target-badge" class="stamp-target-badge" style="display:none;">📌 Stamping on: Page 1</div>
             <button id="stamp-delete-template-btn" class="btn btn-secondary" style="width: 100%; padding: 8px; font-size: 12px; color: #ef4444; border-color: rgba(239,68,68,0.2);"><i class="fa-solid fa-trash-can"></i> Remove Permanently</button>
           </div>
 
@@ -263,9 +300,9 @@
       <main class="paper-workspace">
         <div class="page-block" id="page-1-block">
           <div class="page-num-label">
-            <span><i class="fa-regular fa-file"></i> Page 1</span>
+            <span id="page-1-title-span"><i class="fa-regular fa-file"></i> <span class="page-title-text">Page 1</span></span>
           </div>
-          <div id="paper-sheet" class="paper-sheet">
+          <div id="paper-sheet" class="paper-sheet" data-sheet-id="sheet-main">
             <div id="margin-line" class="paper-margin-line"></div>
             <div id="paper-out" class="paper-content-out" contenteditable="true" spellcheck="false"></div>
           </div>

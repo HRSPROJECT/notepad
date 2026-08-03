@@ -764,3 +764,58 @@ body.slice-mode .paper-sheet {
   font-size: 11px;
   font-family: monospace;
 }
+
+/* ===== Editable Page Title ===== */
+
+/* The clickable text that triggers inline rename */
+.page-title-text {
+  transition: color 0.15s ease;
+  border-radius: 3px;
+  padding: 1px 3px;
+}
+
+.page-title-text:hover {
+  color: var(--accent-color);
+  background-color: var(--accent-light);
+}
+
+/* Inline input that appears when renaming a page */
+.page-title-input {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--accent-color);
+  border-radius: var(--radius-sm);
+  padding: 2px 7px;
+  outline: none;
+  font-family: inherit;
+  width: 120px;
+  box-shadow: 0 0 0 3px var(--accent-light);
+  transition: box-shadow 0.15s ease;
+}
+
+.page-title-input:focus {
+  box-shadow: 0 0 0 4px var(--accent-light);
+}
+
+/* ===== Stamp Target Page Badge ===== */
+
+.stamp-target-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-color);
+  background: var(--accent-light);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  cursor: default;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
