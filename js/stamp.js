@@ -42,6 +42,26 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Persistence helpers ───────────────────────────────────────
   const INSTANCES_KEY = 'inkflow_stamp_instances';
   const IMG_KEY       = 'inkflow_stamp_img';
+  const DEFAULTS_KEY  = 'inkflow_stamp_defaults'; // remembers last-used size & opacity
+
+  // Default new-stamp settings (overridden by saved prefs)
+  let stampDefaults = { size: 120, opacity: 100 };
+
+  function saveStampDefaults() {
+    localStorage.setItem(DEFAULTS_KEY, JSON.stringify(stampDefaults));
+  }
+
+  function loadStampDefaults() {
+    try {
+      const raw = localStorage.getItem(DEFAULTS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        stampDefaults = { ...stampDefaults, ...parsed };
+      }
+    } catch (e) {
+      console.warn('Could not load stamp defaults:', e);
+    }
+  }
 
   function saveStampInstances() {
     localStorage.setItem(INSTANCES_KEY, JSON.stringify(stampInstances));
@@ -76,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function clearAllStampStorage() {
     localStorage.removeItem(INSTANCES_KEY);
     localStorage.removeItem(IMG_KEY);
+    localStorage.removeItem(DEFAULTS_KEY);
   }
 
   // ── Sheet helpers ─────────────────────────────────────────────
@@ -213,8 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
       sheetId,
       x:        60,
       y:        60,
-      size:     120,
-      opacity:  100,
+      size:     stampDefaults.size,    // remembered from last edit
+      opacity:  stampDefaults.opacity, // remembered from last edit
       rotation: 0
     };
 
@@ -276,6 +297,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const el = document.querySelector('.stamp-overlay[data-id="' + selectedStampId + '"]');
         applyInstanceStyle(el, instance);
         saveStampInstances();
+        // Remember this size as the default for future new stamps
+        stampDefaults.size = instance.size;
+        saveStampDefaults();
       }
     });
   }
@@ -290,6 +314,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const el = document.querySelector('.stamp-overlay[data-id="' + selectedStampId + '"]');
         applyInstanceStyle(el, instance);
         saveStampInstances();
+        // Remember this opacity as the default for future new stamps
+        stampDefaults.opacity = instance.opacity;
+        saveStampDefaults();
       }
     });
   }
@@ -473,6 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Init: restore saved state on page load ─────────────────────
   function init() {
+    loadStampDefaults(); // restore last-used size & opacity before creating any instance
     const savedImg = loadStampImage();
     if (savedImg) {
       showStampUI(savedImg);
