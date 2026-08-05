@@ -49,7 +49,12 @@
         
         <!-- Textarea input -->
         <div class="form-group">
-          <label for="editor-txt">Type Text Below</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label for="editor-txt" style="margin-bottom: 0;">Type Text Below</label>
+            <select id="active-page-select" class="editor-select" style="padding: 4px 8px; font-size: 12px; width: auto; font-weight: 600;" title="Select Page to Edit">
+              <option value="0">Page 1</option>
+            </select>
+          </div>
           <textarea id="editor-txt" class="editor-textarea" placeholder="Start typing your notes..."></textarea>
         </div>
 

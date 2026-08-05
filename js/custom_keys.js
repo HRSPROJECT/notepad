@@ -119,50 +119,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, true); // Use capture phase
 
-  // Also handle custom keys when typing directly on the contenteditable sheet
-  const paperOut = document.getElementById('paper-out');
-  if (paperOut) {
-    paperOut.addEventListener('beforeinput', (e) => {
-      // Only process character insertions
-      if (e.inputType !== 'insertText' || !e.data) return;
+  // Handle custom keys when typing directly on ANY contenteditable sheet (Page 1 & extra pages)
+  document.body.addEventListener('beforeinput', (e) => {
+    // Check if event target is inside a paper content-out container
+    const targetOut = e.target && e.target.closest ? e.target.closest('.paper-content-out') : null;
+    if (!targetOut) return;
 
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
+    // Only process character insertions
+    if (e.inputType !== 'insertText' || !e.data) return;
 
-      const range = selection.getRangeAt(0);
-      
-      // Get text content before cursor
-      const textNode = range.startContainer;
-      if (textNode.nodeType !== Node.TEXT_NODE) return;
-      
-      const textBeforeCursor = textNode.textContent.substring(0, range.startOffset) + e.data;
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return;
 
-      for (const ck of customKeys) {
-        if (ck.trigger && textBeforeCursor.endsWith(ck.trigger)) {
-          // Prevent the default character insertion
-          e.preventDefault();
+    const range = selection.getRangeAt(0);
+    
+    // Get text content before cursor
+    const textNode = range.startContainer;
+    if (textNode.nodeType !== Node.TEXT_NODE) return;
+    
+    const textBeforeCursor = textNode.textContent.substring(0, range.startOffset) + e.data;
 
-          // Calculate the replacement
-          const beforeTrigger = textBeforeCursor.substring(0, textBeforeCursor.length - ck.trigger.length);
-          const replacement = beforeTrigger + ck.replacement;
+    for (const ck of customKeys) {
+      if (ck.trigger && textBeforeCursor.endsWith(ck.trigger)) {
+        // Prevent the default character insertion
+        e.preventDefault();
 
-          // Replace the text in the text node
-          const afterCursor = textNode.textContent.substring(range.startOffset);
-          textNode.textContent = replacement + afterCursor;
+        // Calculate the replacement
+        const beforeTrigger = textBeforeCursor.substring(0, textBeforeCursor.length - ck.trigger.length);
+        const replacement = beforeTrigger + ck.replacement;
 
-          // Set cursor position after replacement
-          range.setStart(textNode, replacement.length);
-          range.setEnd(textNode, replacement.length);
-          selection.removeAllRanges();
-          selection.addRange(range);
+        // Replace the text in the text node
+        const afterCursor = textNode.textContent.substring(range.startOffset);
+        textNode.textContent = replacement + afterCursor;
 
-          // Trigger input event for synchronization
-          paperOut.dispatchEvent(new Event('input', { bubbles: true }));
-          break;
-        }
+        // Set cursor position after replacement
+        range.setStart(textNode, replacement.length);
+        range.setEnd(textNode, replacement.length);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        // Trigger input event for synchronization on the target page
+        targetOut.dispatchEvent(new Event('input', { bubbles: true }));
+        break;
       }
-    }, true);
-  }
+    }
+  }, true);
 
   // Handle adding new shortcut mappings
   if (addBtn && triggerInput && replacementInput) {

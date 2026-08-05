@@ -356,6 +356,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Track active sheet when focusing any page sheet via keyboard or click
+  paperWorkspace.addEventListener('focusin', e => {
+    const sheet = e.target.closest('.paper-sheet');
+    if (sheet) {
+      setActiveSheet(sheet);
+    }
+  });
+
   document.addEventListener('mousemove', e => {
     if (!isDragging || !selectedStampId) return;
     const sheet    = getSheetById(dragSheetId) || getTargetSheet();

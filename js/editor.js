@@ -32,6 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Preset elements
   const presetPaperButtons = document.querySelectorAll('[data-paper]');
   const presetInkButtons = document.querySelectorAll('[data-ink]');
+  const pageSelect = document.getElementById('active-page-select');
+  let activePageIndex = 0; // 0-based index: 0 = Page 1, 1 = extraPages[0] (Page 2), etc.
 
   const today = new Date();
   const defaultDateStr = `Date: ${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
@@ -118,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const titleText = block.querySelector('.page-title-text');
 
       const existing = (state.extraPages && state.extraPages[idx]) ? state.extraPages[idx] : {};
-      const text = co ? (co.innerText || co.textContent || '') : (existing.text || '');
+      const text = co ? htmlToMarkdown(co.innerHTML) : (existing.text || '');
       const title = titleText ? titleText.textContent.trim() : (existing.title || `Page ${idx + 2}`);
       const sheetId = sheet ? (sheet.getAttribute('data-sheet-id') || existing.sheetId) : (existing.sheetId || ('sheet-' + Date.now()));
       const height = existing.height || null;
@@ -204,6 +206,60 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ── Markdown to HTML Sanitized Formatter ────────────────────
+  function formatMarkdownToHTML(text) {
+    if (!text) return '';
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+    
+    let escapedText = escapeHtml(text);
+    let htmlContent = escapedText
+      .replace(/\*\*([\s\S]*?)\*\*/g, `<span style="font-weight: ${state.boldWeight};">$1</span>`)
+      .replace(/__([\s\S]*?)__/g, `<span style="text-decoration: underline; text-decoration-thickness: ${state.underlineThickness}px;">$1</span>`)
+      .replace(/^(Date\s*:\s*[^\n]+)/im, '<span style="float: right;">$1</span>');
+
+    const tempSanitize = document.createElement('div');
+    tempSanitize.innerHTML = htmlContent;
+
+    function sanitizeDOM(node) {
+      for (let i = node.childNodes.length - 1; i >= 0; i--) {
+        const child = node.childNodes[i];
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          const tagName = child.tagName.toLowerCase();
+          if (tagName === 'span') {
+            const styleAttr = child.getAttribute('style') || '';
+            while (child.attributes.length > 0) {
+              child.removeAttribute(child.attributes[0].name);
+            }
+            const dummy = document.createElement('span');
+            dummy.style.cssText = styleAttr;
+            const allowed = ['color', 'font-size', 'font-weight', 'text-decoration', 'text-decoration-thickness', 'border-bottom', 'padding-bottom', 'display', 'float', 'text-align'];
+            allowed.forEach(prop => {
+              if (dummy.style[prop]) {
+                child.style[prop] = dummy.style[prop];
+              }
+            });
+            sanitizeDOM(child);
+          } else if (tagName === 'br' || tagName === 'div' || tagName === 'p') {
+            while (child.attributes.length > 0) {
+              child.removeAttribute(child.attributes[0].name);
+            }
+            sanitizeDOM(child);
+          } else {
+            const textNode = document.createTextNode(child.outerHTML);
+            node.replaceChild(textNode, child);
+          }
+        }
+      }
+    }
+
+    sanitizeDOM(tempSanitize);
+    return tempSanitize.innerHTML;
+  }
+
   // Draw paper and apply layouts dynamically
   function render() {
     const fontSize = parseInt(state.size);
@@ -219,66 +275,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Apply text content & fonts
     if (paperOut) {
-      // Convert Markdown to spans, then safely sanitize all DOM nodes to prevent XSS
-      // First escape HTML entities to prevent XSS
-      function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-      }
-      
-      // Escape all HTML first
-      let escapedText = escapeHtml(state.text);
-      
-      // Process markdown, then apply Date float styling
-      // Use [\s\S] instead of . to match newlines as well
-      // Note: After escaping, ** becomes ** (no change), so markdown markers are preserved
-      let htmlContent = escapedText
-        .replace(/\*\*([\s\S]*?)\*\*/g, `<span style="font-weight: ${state.boldWeight};">$1</span>`)
-        .replace(/__([\s\S]*?)__/g, `<span style="text-decoration: underline; text-decoration-thickness: ${state.underlineThickness}px;">$1</span>`)
-        .replace(/^(Date\s*:\s*[^\n]+)/im, '<span style="float: right;">$1</span>');
-
-      const tempSanitize = document.createElement('div');
-      tempSanitize.innerHTML = htmlContent;
-
-      function sanitizeDOM(node) {
-        for (let i = node.childNodes.length - 1; i >= 0; i--) {
-          const child = node.childNodes[i];
-          if (child.nodeType === Node.ELEMENT_NODE) {
-            const tagName = child.tagName.toLowerCase();
-            if (tagName === 'span') {
-              const styleAttr = child.getAttribute('style') || '';
-              // strip all attributes to avoid onload/onclick hacks
-              while (child.attributes.length > 0) {
-                child.removeAttribute(child.attributes[0].name);
-              }
-              const dummy = document.createElement('span');
-              dummy.style.cssText = styleAttr;
-              const allowed = ['color', 'font-size', 'font-weight', 'text-decoration', 'text-decoration-thickness', 'border-bottom', 'padding-bottom', 'display', 'float', 'text-align'];
-              allowed.forEach(prop => {
-                if (dummy.style[prop]) {
-                  child.style[prop] = dummy.style[prop];
-                }
-              });
-              sanitizeDOM(child);
-            } else if (tagName === 'br' || tagName === 'div' || tagName === 'p') {
-              while (child.attributes.length > 0) {
-                child.removeAttribute(child.attributes[0].name);
-              }
-              sanitizeDOM(child);
-            } else {
-              // Replace other non-permitted tags with text nodes (safely escapes them)
-              const textNode = document.createTextNode(child.outerHTML);
-              node.replaceChild(textNode, child);
-            }
-          }
-        }
-      }
-
-      sanitizeDOM(tempSanitize);
-
       if (document.activeElement !== paperOut) {
-        paperOut.innerHTML = tempSanitize.innerHTML;
+        paperOut.innerHTML = formatMarkdownToHTML(state.text);
       }
 
       paperOut.style.fontFamily = state.font;
@@ -376,8 +374,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateStats() {
     if (charCount && wordCount) {
-      charCount.textContent = state.text.length;
-      const words = state.text.trim().split(/\s+/).filter(w => w.length > 0);
+      let combinedText = state.text || '';
+      if (state.extraPages && Array.isArray(state.extraPages)) {
+        state.extraPages.forEach(p => {
+          if (p && p.text) combinedText += '\n' + p.text;
+        });
+      }
+      charCount.textContent = combinedText.length;
+      const words = combinedText.trim().split(/\s+/).filter(w => w.length > 0);
       wordCount.textContent = words.length;
     }
   }
@@ -445,6 +449,16 @@ document.addEventListener('DOMContentLoaded', () => {
         contentEl.style.letterSpacing  = state.letterSpacing + 'px';
         contentEl.style.wordSpacing    = state.wordSpacing + 'px';
         contentEl.style.color          = state.ink;
+
+        // Update bold weight and underline thickness on existing spans in extra pages
+        contentEl.querySelectorAll('span').forEach(span => {
+          if (span.style.fontWeight && parseInt(span.style.fontWeight) >= 600) {
+            span.style.fontWeight = state.boldWeight;
+          }
+          if (span.style.textDecoration && span.style.textDecoration.includes('underline')) {
+            span.style.textDecorationThickness = state.underlineThickness + 'px';
+          }
+        });
       }
     });
   }
@@ -541,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Sync content changes back to state
     contentOut.addEventListener('input', () => {
-      pageDat.text = contentOut.innerText;
+      pageDat.text = htmlToMarkdown(contentOut.innerHTML);
       saveState();
     });
 
@@ -560,6 +574,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => sheet.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
 
     saveState();
+    updatePageSelectDropdown();
+    setActivePage(state.extraPages.length);
   }
 
   // Re-index page blocks after a removal (titles are custom; only update data attribute)
@@ -624,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const marginEl = pageWrap.querySelector('.paper-margin-line');
       const contentOut = pageWrap.querySelector('.paper-content-out');
 
-      contentOut.innerText = text;
+      contentOut.innerHTML = formatMarkdownToHTML(text);
 
       applySheetStyle(sheet, marginEl);
       if (height && sheet) {
@@ -641,7 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
       contentOut.style.color         = state.ink;
 
       contentOut.addEventListener('input', () => {
-        pageDat.text = contentOut.innerText || contentOut.textContent || '';
+        pageDat.text = htmlToMarkdown(contentOut.innerHTML);
         saveState();
       });
 
@@ -652,9 +668,11 @@ document.addEventListener('DOMContentLoaded', () => {
           pageWrap.remove();
           renumberPages();
           saveState();
+          setActivePage(0, true);
         }
       });
     });
+    updatePageSelectDropdown();
   }
 
   // Initialise the "Add New Page" strip at the bottom of the workspace
@@ -725,7 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sheet      = pageWrap.querySelector('.paper-sheet');
     const marginEl   = pageWrap.querySelector('.paper-margin-line');
 
-    contentOut.innerText = initialText || '';
+    contentOut.innerHTML = formatMarkdownToHTML(initialText || '');
 
     // Apply current styling
     applySheetStyle(sheet, marginEl);
@@ -743,7 +761,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Wire input sync
     contentOut.addEventListener('input', () => {
-      pageDat.text = contentOut.innerText;
+      pageDat.text = htmlToMarkdown(contentOut.innerHTML);
       saveState();
     });
 
@@ -759,15 +777,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     renumberPages();
+    updatePageSelectDropdown();
     return pageWrap;
   }
 
   // Attach event handlers
+  // Attach event handlers
   if (txt) {
     txt.addEventListener('input', (e) => {
-      state.text = e.target.value;
-      render();
+      const val = e.target.value;
+      if (activePageIndex === 0) {
+        state.text = val;
+        render();
+      } else {
+        const extraIdx = activePageIndex - 1;
+        if (state.extraPages && state.extraPages[extraIdx]) {
+          state.extraPages[extraIdx].text = val;
+          const blocks = document.querySelectorAll('.extra-page-block');
+          const block = blocks[extraIdx];
+          if (block) {
+            const co = block.querySelector('.paper-content-out');
+            if (co) co.innerHTML = formatMarkdownToHTML(val);
+          }
+        }
+      }
       saveState();
+      updateStats();
     });
 
     txt.addEventListener('keydown', (e) => {
@@ -785,38 +820,189 @@ document.addEventListener('DOMContentLoaded', () => {
           let bullet = listMatch[2];
 
           if (/^[0-9]+[.)]$/.test(bullet)) {
-            // It's a number list, increment the number
             const num = parseInt(bullet, 10);
             const separator = bullet.replace(/[0-9]/g, '');
             bullet = (num + 1) + separator;
           }
 
           const insertText = '\n' + indent + bullet + ' ';
-
           const newText = txt.value.substring(0, start) + insertText + txt.value.substring(txt.selectionEnd);
           txt.value = newText;
-          state.text = newText;
+
+          if (activePageIndex === 0) {
+            state.text = newText;
+            render();
+          } else {
+            const extraIdx = activePageIndex - 1;
+            if (state.extraPages && state.extraPages[extraIdx]) {
+              state.extraPages[extraIdx].text = newText;
+              const blocks = document.querySelectorAll('.extra-page-block');
+              const block = blocks[extraIdx];
+              if (block) {
+                const co = block.querySelector('.paper-content-out');
+                if (co) co.innerHTML = formatMarkdownToHTML(newText);
+              }
+            }
+          }
 
           txt.setSelectionRange(start + insertText.length, start + insertText.length);
-
-          render();
           saveState();
+          updateStats();
         }
       }
     });
   }
 
-  // Helper to check if selection is inside paper sheet
-  function isSelectionInSheet() {
-    const selection = window.getSelection();
-    return paperOut && !selection.isCollapsed && paperOut.contains(selection.anchorNode);
+  // ── Active Page Management for Sidebar Text Area & Canvas ──────
+  function updatePageSelectDropdown() {
+    if (!pageSelect) return;
+    pageSelect.innerHTML = '';
+    const p1Title = state.page1Title || 'Page 1';
+    const opt1 = document.createElement('option');
+    opt1.value = '0';
+    opt1.textContent = p1Title;
+    pageSelect.appendChild(opt1);
+
+    if (state.extraPages && Array.isArray(state.extraPages)) {
+      state.extraPages.forEach((p, idx) => {
+        const opt = document.createElement('option');
+        opt.value = (idx + 1).toString();
+        opt.textContent = p.title || `Page ${idx + 2}`;
+        pageSelect.appendChild(opt);
+      });
+    }
+
+    const totalPages = 1 + (state.extraPages ? state.extraPages.length : 0);
+    if (activePageIndex >= totalPages) {
+      activePageIndex = Math.max(0, totalPages - 1);
+    }
+    pageSelect.value = activePageIndex.toString();
   }
 
-  // Helper to wrap formatting styles selection-specifically on the sheet
+  function setActivePage(index, skipScroll = false) {
+    const totalPages = 1 + (state.extraPages ? state.extraPages.length : 0);
+    activePageIndex = Math.max(0, Math.min(index, totalPages - 1));
+
+    updatePageSelectDropdown();
+
+    // Update textarea content for active page
+    let activeText = '';
+    if (activePageIndex === 0) {
+      activeText = state.text;
+    } else if (state.extraPages && state.extraPages[activePageIndex - 1]) {
+      activeText = state.extraPages[activePageIndex - 1].text || '';
+    }
+
+    if (txt && document.activeElement !== txt) {
+      txt.value = activeText;
+    }
+
+    // Scroll to active page sheet if requested
+    if (!skipScroll) {
+      let targetSheet = null;
+      if (activePageIndex === 0) {
+        targetSheet = paperSheet;
+      } else {
+        const blocks = document.querySelectorAll('.extra-page-block');
+        const block = blocks[activePageIndex - 1];
+        if (block) targetSheet = block.querySelector('.paper-sheet');
+      }
+      if (targetSheet) {
+        targetSheet.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    // Add outline highlight to active sheet
+    const allSheets = document.querySelectorAll('.paper-sheet');
+    allSheets.forEach((sheet, idx) => {
+      if (idx === activePageIndex) {
+        sheet.classList.add('active-page-sheet');
+      } else {
+        sheet.classList.remove('active-page-sheet');
+      }
+    });
+  }
+
+  if (pageSelect) {
+    pageSelect.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.value, 10);
+      setActivePage(idx);
+    });
+  }
+
+  if (paperWorkspace) {
+    paperWorkspace.addEventListener('mousedown', (e) => {
+      const sheet = e.target.closest('.paper-sheet');
+      if (sheet) {
+        const blocks = [...document.querySelectorAll('.paper-sheet')];
+        const idx = blocks.indexOf(sheet);
+        if (idx !== -1 && idx !== activePageIndex) {
+          setActivePage(idx, true);
+        }
+      }
+    });
+
+    paperWorkspace.addEventListener('focusin', (e) => {
+      const sheet = e.target.closest('.paper-sheet');
+      if (sheet) {
+        const blocks = [...document.querySelectorAll('.paper-sheet')];
+        const idx = blocks.indexOf(sheet);
+        if (idx !== -1 && idx !== activePageIndex) {
+          setActivePage(idx, true);
+        }
+      }
+    });
+
+    paperWorkspace.addEventListener('input', (e) => {
+      const sheet = e.target.closest('.paper-sheet');
+      if (sheet) {
+        const blocks = [...document.querySelectorAll('.paper-sheet')];
+        const idx = blocks.indexOf(sheet);
+        if (idx !== -1) {
+          if (idx !== activePageIndex) setActivePage(idx, true);
+          const co = sheet.querySelector('.paper-content-out');
+          if (co) {
+            const md = htmlToMarkdown(co.innerHTML);
+            if (idx === 0) {
+              state.text = md;
+            } else if (state.extraPages && state.extraPages[idx - 1]) {
+              state.extraPages[idx - 1].text = md;
+            }
+            if (txt && document.activeElement !== txt) {
+              txt.value = md;
+            }
+            saveState();
+            updateStats();
+          }
+        }
+      }
+    });
+  }
+
+  document.addEventListener('inkflow-page-renamed', () => {
+    updatePageSelectDropdown();
+  });
+
+  // Helper to get whichever paper sheet content editable element currently holds the user selection
+  function getSelectedSheetContent() {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.anchorNode) return null;
+    const node = selection.anchorNode;
+    const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    return el ? el.closest('.paper-content-out') : null;
+  }
+
+  // Helper to check if selection is inside ANY paper sheet
+  function isSelectionInSheet() {
+    return getSelectedSheetContent() !== null;
+  }
+
+  // Helper to wrap formatting styles selection-specifically on whichever sheet is selected
   function applyStyleToSelection(styleName, styleValue) {
     const selection = window.getSelection();
-    if (selection.isCollapsed) return;
+    if (!selection || selection.isCollapsed) return;
 
+    const targetOut = getSelectedSheetContent();
     const range = selection.getRangeAt(0);
     const span = document.createElement('span');
     span.style[styleName] = styleValue;
@@ -829,7 +1015,11 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error("Failed to wrap selection styling:", err);
     }
 
-    paperOut.dispatchEvent(new Event('input')); // trigger sync
+    if (targetOut) {
+      targetOut.dispatchEvent(new Event('input', { bubbles: true }));
+    } else if (paperOut) {
+      paperOut.dispatchEvent(new Event('input', { bubbles: true }));
+    }
   }
 
   // Wrap selected text in textarea
@@ -841,29 +1031,53 @@ document.addEventListener('DOMContentLoaded', () => {
     const newText = txt.value.substring(0, start) + prefix + selectedText + suffix + txt.value.substring(end);
 
     txt.value = newText;
-    state.text = newText;
 
-    // Maintain selection roughly
+    if (activePageIndex === 0) {
+      state.text = newText;
+      render();
+    } else {
+      const extraIdx = activePageIndex - 1;
+      if (state.extraPages && state.extraPages[extraIdx]) {
+        state.extraPages[extraIdx].text = newText;
+        const blocks = document.querySelectorAll('.extra-page-block');
+        const block = blocks[extraIdx];
+        if (block) {
+          const co = block.querySelector('.paper-content-out');
+          if (co) co.innerHTML = formatMarkdownToHTML(newText);
+        }
+      }
+    }
+
     setTimeout(() => {
       txt.focus();
       txt.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length);
     }, 0);
 
-    render();
     saveState();
+    updateStats();
   }
 
   if (btnBold) {
     btnBold.addEventListener('click', () => {
-      // Always insert markdown in textarea, regardless of where selection is
-      insertFormatting('**', '**');
+      const targetOut = getSelectedSheetContent() || (document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('paper-content-out') ? document.activeElement : null);
+      if (targetOut) {
+        document.execCommand('bold');
+        targetOut.dispatchEvent(new Event('input', { bubbles: true }));
+      } else {
+        insertFormatting('**', '**');
+      }
     });
   }
 
   if (btnUnderline) {
     btnUnderline.addEventListener('click', () => {
-      // Always insert markdown in textarea, regardless of where selection is
-      insertFormatting('__', '__');
+      const targetOut = getSelectedSheetContent() || (document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('paper-content-out') ? document.activeElement : null);
+      if (targetOut) {
+        document.execCommand('underline');
+        targetOut.dispatchEvent(new Event('input', { bubbles: true }));
+      } else {
+        insertFormatting('__', '__');
+      }
     });
   }
 
@@ -1213,7 +1427,6 @@ document.addEventListener('DOMContentLoaded', () => {
       state.text = `${dateStr}\n\n`;
       state.page1Title = 'Page 1';
       state.page1Height = null;
-      if (txt) txt.value = state.text;
 
       // Reset Page 1 label title text in DOM
       const page1TitleSpan = document.getElementById('page-1-title-span');
@@ -1226,6 +1439,7 @@ document.addEventListener('DOMContentLoaded', () => {
       state.extraPages = [];
       document.querySelectorAll('.extra-page-block').forEach(el => el.remove());
       render();
+      setActivePage(0, true);
       saveState();
       document.dispatchEvent(new CustomEvent('inkflow-clear'));
     }
@@ -1397,10 +1611,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Ctrl + B : Bold Text
         if (e.key.toLowerCase() === 'b') {
           e.preventDefault();
-          // Check if focus is on the contenteditable sheet
-          if (document.activeElement === paperOut) {
+          const targetOut = getSelectedSheetContent() || (document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('paper-content-out') ? document.activeElement : null);
+          if (targetOut) {
             document.execCommand('bold');
-            paperOut.dispatchEvent(new Event('input'));
+            targetOut.dispatchEvent(new Event('input', { bubbles: true }));
           } else {
             insertFormatting('**', '**');
           }
@@ -1408,10 +1622,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Ctrl + U : Underline Text
         else if (e.key.toLowerCase() === 'u') {
           e.preventDefault();
-          // Check if focus is on the contenteditable sheet
-          if (document.activeElement === paperOut) {
+          const targetOut = getSelectedSheetContent() || (document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('paper-content-out') ? document.activeElement : null);
+          if (targetOut) {
             document.execCommand('underline');
-            paperOut.dispatchEvent(new Event('input'));
+            targetOut.dispatchEvent(new Event('input', { bubbles: true }));
           } else {
             insertFormatting('__', '__');
           }
@@ -1517,8 +1731,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Floating Rich Text Formatting Toolbar ──────────────────────
   const floatingToolbar = document.getElementById('floating-toolbar');
   
-  if (floatingToolbar && paperOut) {
-    // Prevent toolbar click from clearing text selection in paperOut
+  if (floatingToolbar) {
+    // Prevent toolbar click from clearing text selection in paper sheets
     floatingToolbar.addEventListener('mousedown', (e) => {
       e.preventDefault();
     });
@@ -1527,8 +1741,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatBoldBtn = document.getElementById('float-bold');
     if (floatBoldBtn) {
       floatBoldBtn.addEventListener('click', () => {
+        const targetOut = getSelectedSheetContent();
         document.execCommand('bold');
-        paperOut.dispatchEvent(new Event('input')); // trigger sync
+        if (targetOut) {
+          targetOut.dispatchEvent(new Event('input', { bubbles: true }));
+        }
       });
     }
 
@@ -1536,8 +1753,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatUnderlineBtn = document.getElementById('float-underline');
     if (floatUnderlineBtn) {
       floatUnderlineBtn.addEventListener('click', () => {
+        const targetOut = getSelectedSheetContent();
         document.execCommand('underline');
-        paperOut.dispatchEvent(new Event('input')); // trigger sync
+        if (targetOut) {
+          targetOut.dispatchEvent(new Event('input', { bubbles: true }));
+        }
       });
     }
 
@@ -1548,7 +1768,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (floatSizeUp) {
       floatSizeUp.addEventListener('click', () => {
         const selection = window.getSelection();
-        if (selection.isCollapsed) return;
+        if (!selection || selection.isCollapsed) return;
         const range = selection.getRangeAt(0);
         const parent = range.commonAncestorContainer.parentElement;
         const currentSize = parent ? parseInt(window.getComputedStyle(parent).fontSize) : parseInt(state.size);
@@ -1564,7 +1784,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (floatSizeDown) {
       floatSizeDown.addEventListener('click', () => {
         const selection = window.getSelection();
-        if (selection.isCollapsed) return;
+        if (!selection || selection.isCollapsed) return;
         const range = selection.getRangeAt(0);
         const parent = range.commonAncestorContainer.parentElement;
         const currentSize = parent ? parseInt(window.getComputedStyle(parent).fontSize) : parseInt(state.size);
@@ -1586,11 +1806,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Detect selection change and position toolbar
+    // Detect selection change and position toolbar over ANY paper sheet
     document.addEventListener('selectionchange', () => {
       const selection = window.getSelection();
+      const targetOut = getSelectedSheetContent();
 
-      if (selection.isCollapsed || !paperOut.contains(selection.anchorNode)) {
+      if (!selection || selection.isCollapsed || !targetOut) {
         floatingToolbar.style.display = 'none';
         return;
       }
@@ -1625,6 +1846,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAddPageStrip();
   restoreExtraPages();
   render();
+  setActivePage(0, true);
 
   // Wire Page 1 label for inline rename
   const page1TitleSpan = document.getElementById('page-1-title-span');
@@ -1646,6 +1868,8 @@ document.addEventListener('DOMContentLoaded', () => {
     insertPageAfterBlock,
     renumberPages,
     syncExtraPagesStyle,
+    setActivePage,
+    updatePageSelectDropdown,
     getPaperWorkspace:   () => paperWorkspace,
     getPaperSheet:       () => paperSheet,
     getPaperOut:         () => paperOut,
