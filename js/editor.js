@@ -1870,6 +1870,7 @@ document.addEventListener('DOMContentLoaded', () => {
     syncExtraPagesStyle,
     setActivePage,
     updatePageSelectDropdown,
+    formatMarkdownToHTML,
     getPaperWorkspace:   () => paperWorkspace,
     getPaperSheet:       () => paperSheet,
     getPaperOut:         () => paperOut,

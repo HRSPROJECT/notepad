@@ -44,18 +44,25 @@ document.addEventListener('DOMContentLoaded', () => {
     return parseInt(ikf.getState().lineHeight) || 40;
   }
 
-  // Snap a raw Y (relative to sheet top) to the nearest ruled-line grid
-  function snappedY(rawY) {
-    const lh = getLineHeight();
-    const top = 40; // paper-sheet padding-top
+  // Read actual paddingTop of a sheet element (fallback 40px)
+  function getSheetPaddingTop(sheet) {
+    if (!sheet) return 40;
+    const pt = parseInt(window.getComputedStyle(sheet).paddingTop) || 40;
+    return pt;
+  }
+
+  // Snap a raw Y (relative to sheet outer border-box top) to the nearest ruled-line grid
+  function snappedY(rawY, sheet) {
+    const lh  = getLineHeight();
+    const top = getSheetPaddingTop(sheet);
     const idx = Math.round((rawY - top) / lh);
     return top + Math.max(0, idx) * lh;
   }
 
   // Convert a raw click Y to a text line index (1-based minimum)
-  function lineIndexFromY(rawY) {
+  function lineIndexFromY(rawY, sheet) {
     const lh  = getLineHeight();
-    const top = 40;
+    const top = getSheetPaddingTop(sheet);
     return Math.max(1, Math.floor((rawY - top) / lh));
   }
 
@@ -75,12 +82,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!sliceMode) return;
         const rect = sheet.getBoundingClientRect();
         const rawY = e.clientY - rect.top;
-        const sy   = snappedY(rawY);
+        const sy   = snappedY(rawY, sheet);
         const prev = ensurePreview(sheet);
         prev.style.top     = sy + 'px';
         prev.style.display = 'flex';
         // Update line label with line number
-        const lineNum = lineIndexFromY(rawY);
+        const lineNum = lineIndexFromY(rawY, sheet);
         const badge   = prev.querySelector('.slice-badge-text');
         if (badge) badge.textContent = `Slice at line ${lineNum}`;
       };
@@ -167,10 +174,8 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ─── Snapshot helpers ────────────────────────────────── */
   function captureSnapshot() {
     const state = ikf.getState();
-    const extras = [...document.querySelectorAll('.extra-page-block')].map(block => {
-      const co = block.querySelector('.paper-content-out');
-      return co ? (co.innerText || '') : '';
-    });
+    // Use state.extraPages text (markdown) which is the canonical source for extra pages
+    const extras = (state.extraPages || []).map(p => p.text || '');
     return { page1: state.text, extras };
   }
 
@@ -201,12 +206,44 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ─── Perform the actual slice ────────────────────────── */
+  // Helper: get htmlToMarkdown and formatMarkdownToHTML from window.inkflow if exposed,
+  // or fall back to innerText/textContent
+  function getExtraPageText(block) {
+    const state = ikf.getState();
+    const allExtras = [...document.querySelectorAll('.extra-page-block')];
+    const idx = allExtras.indexOf(block);
+    if (idx >= 0 && state.extraPages && state.extraPages[idx]) {
+      return state.extraPages[idx].text || '';
+    }
+    // Fallback: try innerText of contenteditable
+    const co = block.querySelector('.paper-content-out');
+    return co ? (co.innerText || '') : '';
+  }
+
+  function setExtraPageContent(block, text) {
+    const state = ikf.getState();
+    const allExtras = [...document.querySelectorAll('.extra-page-block')];
+    const idx = allExtras.indexOf(block);
+    if (idx >= 0 && state.extraPages && state.extraPages[idx]) {
+      state.extraPages[idx].text = text;
+    }
+    const co = block.querySelector('.paper-content-out');
+    if (co) {
+      // Use formatMarkdownToHTML if available via inkflow API, else plain text
+      if (typeof ikf.formatMarkdownToHTML === 'function') {
+        co.innerHTML = ikf.formatMarkdownToHTML(text);
+      } else {
+        co.textContent = text;
+      }
+    }
+  }
+
   function performSlice(sheet, clickY) {
     // Save undo snapshot BEFORE slicing
     history.push(captureSnapshot());
     updateUndoBtn();
 
-    const lineIdx = lineIndexFromY(clickY);
+    const lineIdx = lineIndexFromY(clickY, sheet);
     const state   = ikf.getState();
     const main    = ikf.getPaperSheet();
     const isMain  = sheet === main;
@@ -214,14 +251,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentText, afterBlock;
 
     if (isMain) {
+      // Page 1: canonical text from state.text (markdown)
       currentText = state.text;
       afterBlock  = null;
     } else {
-      const block      = sheet.closest('.extra-page-block');
+      const block = sheet.closest('.extra-page-block');
       if (!block) return;
-      afterBlock       = block;
-      const co         = sheet.querySelector('.paper-content-out');
-      currentText      = co ? (co.innerText || '') : '';
+      afterBlock  = block;
+      // Extra page: use state.extraPages text (markdown), not co.innerText
+      currentText = getExtraPageText(block);
     }
 
     // Split text at line boundary
@@ -243,13 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (txt) txt.value = topText;
       ikf.render();
     } else {
-      const block      = sheet.closest('.extra-page-block');
-      const allExtras  = [...document.querySelectorAll('.extra-page-block')];
-      const idx        = allExtras.indexOf(block);
-      const extraPages = state.extraPages;
-      if (idx >= 0 && extraPages[idx]) extraPages[idx].text = topText;
-      const co = sheet.querySelector('.paper-content-out');
-      if (co) co.innerText = topText;
+      const block = sheet.closest('.extra-page-block');
+      setExtraPageContent(block, topText);
     }
 
     // Insert new bottom page after the sliced page (with 200ms delay for flash)
